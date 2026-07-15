@@ -4,7 +4,7 @@ concommand.Add("convergence_galaxy", function(ply)
         return
     end
 
-    Convergence.OpenGalaxyUI(ply)
+    Convergence.OpenGalaxyUI(ply, "player")
 end)
 
 concommand.Add("convergence_ui_open", function(ply)
@@ -12,5 +12,5 @@ concommand.Add("convergence_ui_open", function(ply)
         return
     end
 
-    Convergence.OpenGalaxyUI(ply)
+    Convergence.OpenGalaxyUI(ply, "player")
 end)

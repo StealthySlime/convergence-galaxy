@@ -13,7 +13,7 @@ local placeholders = {
     },
     {
         id = "administration",
-        name = "GM Controls",
+        name = "GM Tools",
         order = 1000,
         adminOnly = true,
         description = "Planet editing, influence controls, events, and campaign administration will appear here."

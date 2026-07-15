@@ -6,6 +6,7 @@ local Theme = UI.Theme
 UI.Frame = UI.Frame or nil
 UI.ActiveModuleID = UI.ActiveModuleID or "galaxy"
 UI.SelectedPlanetID = UI.SelectedPlanetID or nil
+UI.Mode = UI.Mode or "player"
 
 local function createNavigation(frame)
     local navigation = vgui.Create("DPanel", frame)
@@ -21,14 +22,22 @@ local function createNavigation(frame)
     end
 
     local title = vgui.Create("DLabel", navigation)
-    title:SetText("GALACTIC COMMAND")
+    title:SetText(
+        UI.Mode == "director"
+            and "GALACTIC DIRECTOR"
+            or "GALACTIC COMMAND"
+    )
     title:SetFont("Convergence.UI.Header")
     title:SetTextColor(Theme.GetColor("accent"))
     title:SetPos(14, 20)
     title:SizeToContents()
 
     local subtitle = vgui.Create("DLabel", navigation)
-    subtitle:SetText("CONVERGENCE NETWORK")
+    subtitle:SetText(
+        UI.Mode == "director"
+            and "AUTHORIZED GM VIEW"
+            or "CONVERGENCE NETWORK"
+    )
     subtitle:SetFont("Convergence.UI.Small")
     subtitle:SetTextColor(Theme.GetColor("textMuted"))
     subtitle:SetPos(14, 52)
@@ -119,7 +128,7 @@ local function createHeader(frame)
         Theme.DrawButton(self, width, height, "REFRESH", false)
     end
     refresh.DoClick = function()
-        Convergence.RequestGalaxySnapshot()
+        Convergence.RequestGalaxySnapshot(UI.Mode)
     end
 
     UI.ModuleTitle = moduleTitle
@@ -187,11 +196,24 @@ function UI.Refresh()
     end
 end
 
-function UI.Open()
+function UI.Open(mode)
+    mode = Convergence.NormalizeID(mode or "player")
+
+    if mode == "director" and not LocalPlayer():IsAdmin() then
+        mode = "player"
+    end
+
+    local modeChanged = UI.Mode ~= mode
+    UI.Mode = mode
+
+    if modeChanged and IsValid(UI.Frame) then
+        UI.Frame:Remove()
+        UI.Frame = nil
+    end
     if IsValid(UI.Frame) then
         UI.Frame:MakePopup()
         UI.Frame:SetVisible(true)
-        Convergence.RequestGalaxySnapshot()
+        Convergence.RequestGalaxySnapshot(UI.Mode)
         return
     end
 
@@ -234,7 +256,7 @@ function UI.Open()
     UI.Content = content
 
     UI.SetActiveModule(UI.ActiveModuleID)
-    Convergence.RequestGalaxySnapshot()
+    Convergence.RequestGalaxySnapshot(UI.Mode)
 end
 
 concommand.Add("convergence_ui_client", function()

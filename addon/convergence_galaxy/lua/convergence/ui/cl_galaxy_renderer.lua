@@ -443,7 +443,9 @@ function PANEL:Paint(width, height)
 
             self.FleetPositions[id] = {x = x, y = y}
 
-            local color = Theme.GetFactionColor(fleet.factionID, data)
+            local color = fleet.intelligenceLevel == "contact"
+                and Theme.GetColor("warning")
+                or Theme.GetFactionColor(fleet.factionID, data)
             local size = math.Clamp(6 + math.sqrt(math.max(tonumber(fleet.strength) or 1, 1)) / 18, 7, 14)
 
             surface.SetDrawColor(color)
@@ -478,18 +480,17 @@ function PANEL:Paint(width, height)
 
                 local faction = (data.factions or {})[fleet.factionID]
                 local tooltip = string.format(
-                    "%s
-%s | Strength %s
-%s%s",
+                    "%s\n%s | Strength %s\n%s%s",
                     fleet.name,
-                    faction and faction.shortName or fleet.factionID,
+                    fleet.intelligenceLevel == "contact"
+                        and "UNKNOWN"
+                        or (faction and faction.shortName or fleet.factionID),
                     tostring(fleet.strength or 0),
                     string.upper(fleet.status or "unknown"),
                     fleet.orderType and (" | " .. string.upper(fleet.orderType)) or ""
                 )
 
-                local lines = string.Explode("
-", tooltip)
+                local lines = string.Explode("\n", tooltip)
                 local mouseX, mouseY = self:CursorPos()
                 local boxW, boxH = 265, 76
                 local boxX = math.Clamp(mouseX + 18, 8, width - boxW - 8)

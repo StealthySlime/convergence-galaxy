@@ -2,14 +2,67 @@ util.AddNetworkString("Convergence.Galaxy.Open")
 util.AddNetworkString("Convergence.Galaxy.RequestSnapshot")
 util.AddNetworkString("Convergence.Galaxy.Snapshot")
 
+local MODE_PLAYER = "player"
+local MODE_DIRECTOR = "director"
+
 local function canOpen(ply)
     return IsValid(ply) and ply:IsPlayer()
 end
 
-local function buildSnapshot()
+local function normalizeMode(ply, requested)
+    requested = Convergence.NormalizeID(requested)
+
+    if requested == MODE_DIRECTOR and IsValid(ply) and ply:IsAdmin() then
+        return MODE_DIRECTOR
+    end
+
+    return MODE_PLAYER
+end
+
+local function getPlayerAllianceIDs()
+    local ids = {}
+
+    for id in pairs(Convergence.Factions.GetPlayerFactions()) do
+        ids[id] = true
+    end
+
+    return ids
+end
+
+local function getFleetVisibility(fleet, mode, playerFactionIDs)
+    if mode == MODE_DIRECTOR then
+        return true, "full"
+    end
+
+    if playerFactionIDs[fleet.factionID] then
+        return true, "full"
+    end
+
+    -- Enemy fleets are hidden by default. A future sensor/intelligence service
+    -- can promote them to "contact" or "full" without changing the UI.
+    local metadata = fleet.metadata or fleet.orderMetadata or {}
+    local visibility = Convergence.NormalizeID(metadata.visibility or "hidden")
+
+    if visibility == "public" then
+        return true, "full"
+    end
+
+    if visibility == "contact" then
+        return true, "contact"
+    end
+
+    return false, "hidden"
+end
+
+local function buildSnapshot(ply, requestedMode)
+    local mode = normalizeMode(ply, requestedMode)
+    local playerFactionIDs = getPlayerAllianceIDs()
+
     local snapshot = {
         version = Convergence.Version,
         generatedAt = os.time(),
+        viewMode = mode,
+        isDirector = mode == MODE_DIRECTOR,
         clock = Convergence.Clock.GetTimeTable(),
         galaxy = {
             routes = table.Copy(Convergence.Config.Galaxy.Routes or {})
@@ -41,7 +94,9 @@ local function buildSnapshot()
                     z = definition.swu.pos.z
                 }
             } or nil,
-            regions = table.Copy(definition.regions or {}),
+            regions = mode == MODE_DIRECTOR
+                and table.Copy(definition.regions or {})
+                or nil,
             influence = Convergence.Influence.GetPlanetInfluence(id),
             dominantFactionID = dominantFaction and dominantFaction.id or nil,
             dominantFactionInfluence = dominantFactionInfluence or 0,
@@ -83,25 +138,40 @@ local function buildSnapshot()
         }
     end
 
-
     for id, fleet in pairs(Convergence.Fleets.GetAll()) do
-        snapshot.fleets[id] = {
-            id = fleet.id,
-            name = fleet.name,
-            factionID = fleet.factionID,
-            currentPlanetID = fleet.currentPlanetID,
-            destinationPlanetID = fleet.destinationPlanetID,
-            departureCampaignSeconds = fleet.departureCampaignSeconds,
-            arrivalCampaignSeconds = fleet.arrivalCampaignSeconds,
-            strength = fleet.strength,
-            status = fleet.status,
-            progress = Convergence.Fleets.GetTravelProgress(fleet),
-            etaCampaignSeconds = Convergence.Fleets.GetETASeconds(fleet),
-            orderType = fleet.orderType or "idle",
-            orderPlanetID = fleet.orderPlanetID
-        }
-    end
+        local visible, intelligenceLevel =
+            getFleetVisibility(fleet, mode, playerFactionIDs)
 
+        if visible then
+            snapshot.fleets[id] = {
+                id = fleet.id,
+                name = intelligenceLevel == "contact"
+                    and "Unknown Contact"
+                    or fleet.name,
+                factionID = intelligenceLevel == "contact"
+                    and nil
+                    or fleet.factionID,
+                currentPlanetID = fleet.currentPlanetID,
+                destinationPlanetID = fleet.destinationPlanetID,
+                departureCampaignSeconds = fleet.departureCampaignSeconds,
+                arrivalCampaignSeconds = fleet.arrivalCampaignSeconds,
+                strength = intelligenceLevel == "contact"
+                    and nil
+                    or fleet.strength,
+                status = fleet.status,
+                progress = Convergence.Fleets.GetTravelProgress(fleet),
+                etaCampaignSeconds = Convergence.Fleets.GetETASeconds(fleet),
+                orderType = mode == MODE_DIRECTOR
+                    and (fleet.orderType or "idle")
+                    or nil,
+                orderPlanetID = mode == MODE_DIRECTOR
+                    and fleet.orderPlanetID
+                    or nil,
+                intelligenceLevel = intelligenceLevel,
+                playerVisible = true
+            }
+        end
+    end
 
     local world = Convergence.World.GetState()
     local shipPos = world.swuShipPos
@@ -129,11 +199,11 @@ local function buildSnapshot()
             travelStatus = world.travelStatus,
             mapX = math.Clamp((shipPos.x - minimumX) / rangeX, 0, 1),
             mapY = math.Clamp(1 - ((shipPos.y - minimumY) / rangeY), 0, 1),
-            swuPosition = {
+            swuPosition = mode == MODE_DIRECTOR and {
                 x = shipPos.x,
                 y = shipPos.y,
                 z = shipPos.z
-            }
+            } or nil
         }
     else
         local current = snapshot.planets[world.currentPlanetID or ""]
@@ -148,34 +218,51 @@ local function buildSnapshot()
         }
     end
 
+    if mode == MODE_DIRECTOR then
+        snapshot.director = {
+            currentMap = game.GetMap(),
+            encounterActive = Convergence.World.IsEncounterActive(),
+            npcSpawningAllowed = Convergence.World.CanSpawnNPC(),
+            navigationAvailable =
+                Convergence.Navigation.GetActiveAdapter() ~= nil,
+            registeredFleetCount = Convergence.Fleets.Count(),
+            registeredPlanetCount = Convergence.PlanetService.Count()
+        }
+    end
+
     return snapshot
 end
 
-local function sendSnapshot(ply)
+local function sendSnapshot(ply, requestedMode)
     if not canOpen(ply) then
         return
     end
 
-    local json = util.TableToJSON(buildSnapshot(), false) or "{}"
+    local mode = normalizeMode(ply, requestedMode)
+    local json = util.TableToJSON(buildSnapshot(ply, mode), false) or "{}"
     local compressed = util.Compress(json)
 
     net.Start("Convergence.Galaxy.Snapshot")
+    net.WriteString(mode)
     net.WriteUInt(#compressed, 32)
     net.WriteData(compressed, #compressed)
     net.Send(ply)
 end
 
-function Convergence.OpenGalaxyUI(ply)
+function Convergence.OpenGalaxyUI(ply, requestedMode)
     if not canOpen(ply) then
         return false
     end
 
+    local mode = normalizeMode(ply, requestedMode)
+
     net.Start("Convergence.Galaxy.Open")
+    net.WriteString(mode)
     net.Send(ply)
 
     timer.Simple(0, function()
         if IsValid(ply) then
-            sendSnapshot(ply)
+            sendSnapshot(ply, mode)
         end
     end)
 
@@ -183,5 +270,6 @@ function Convergence.OpenGalaxyUI(ply)
 end
 
 net.Receive("Convergence.Galaxy.RequestSnapshot", function(_, ply)
-    sendSnapshot(ply)
+    local requestedMode = net.ReadString()
+    sendSnapshot(ply, requestedMode)
 end)
