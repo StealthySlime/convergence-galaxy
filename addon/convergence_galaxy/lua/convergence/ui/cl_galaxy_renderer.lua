@@ -60,6 +60,8 @@ function PANEL:Init()
     self.NodePositions = {}
     self.HoverAlpha = 0
     self.HoverPlanetID = nil
+    self.HoveredFleetID = nil
+    self.FleetPositions = {}
 
     self:SetMouseInputEnabled(true)
 end
@@ -183,6 +185,19 @@ function PANEL:Think()
     end
 
     self.HoveredPlanetID = hoveredID
+    self.HoveredFleetID = nil
+
+    if not hoveredID then
+        for id, position in pairs(self.FleetPositions or {}) do
+            local dx = mouseX - position.x
+            local dy = mouseY - position.y
+
+            if dx * dx + dy * dy <= 14 * 14 then
+                self.HoveredFleetID = id
+                break
+            end
+        end
+    end
 
     if hoveredID ~= self.HoverPlanetID then
         self.HoverPlanetID = hoveredID
@@ -389,44 +404,123 @@ function PANEL:Paint(width, height)
     end
 
 
-    for _, fleet in pairs(data.fleets or {}) do
+
+    self.FleetPositions = {}
+
+    for id, fleet in pairs(data.fleets or {}) do
         local origin = self.NodePositions[fleet.currentPlanetID]
 
         if origin then
             local x = origin.x
-            local y = origin.y - 32
+            local y = origin.y
+            local angle = CurTime() * 0.35 + (#id * 0.33)
 
             if fleet.status == "traveling" and fleet.destinationPlanetID then
                 local destination = self.NodePositions[fleet.destinationPlanetID]
 
                 if destination then
                     local progress = math.Clamp(tonumber(fleet.progress) or 0, 0, 1)
+                    local dx = destination.x - origin.x
+                    local dy = destination.y - origin.y
                     x = Lerp(progress, origin.x, destination.x)
                     y = Lerp(progress, origin.y, destination.y)
+                    angle = math.atan2(dy, dx)
+
+                    local trailLength = 26
+                    surface.SetDrawColor(Theme.GetFactionColor(fleet.factionID, data))
+                    surface.DrawLine(
+                        x,
+                        y,
+                        x - math.cos(angle) * trailLength,
+                        y - math.sin(angle) * trailLength
+                    )
                 end
+            else
+                local orbitRadius = 34
+                x = origin.x + math.cos(angle) * orbitRadius
+                y = origin.y + math.sin(angle) * orbitRadius
             end
 
+            self.FleetPositions[id] = {x = x, y = y}
+
             local color = Theme.GetFactionColor(fleet.factionID, data)
-            local size = 8
+            local size = math.Clamp(6 + math.sqrt(math.max(tonumber(fleet.strength) or 1, 1)) / 18, 7, 14)
 
             surface.SetDrawColor(color)
             draw.NoTexture()
             surface.DrawPoly({
-                {x = x, y = y - size},
-                {x = x + size, y = y},
-                {x = x, y = y + size},
-                {x = x - size, y = y}
+                {
+                    x = x + math.cos(angle) * size,
+                    y = y + math.sin(angle) * size
+                },
+                {
+                    x = x + math.cos(angle + 2.45) * size,
+                    y = y + math.sin(angle + 2.45) * size
+                },
+                {
+                    x = x + math.cos(angle + math.pi) * size * 0.5,
+                    y = y + math.sin(angle + math.pi) * size * 0.5
+                },
+                {
+                    x = x + math.cos(angle - 2.45) * size,
+                    y = y + math.sin(angle - 2.45) * size
+                }
             })
 
-            draw.SimpleText(
-                fleet.name,
-                "Convergence.UI.Small",
-                x,
-                y + 12,
-                color,
-                TEXT_ALIGN_CENTER,
-                TEXT_ALIGN_TOP
-            )
+            if self.HoveredFleetID == id then
+                drawCircleOutline(
+                    x,
+                    y,
+                    size + 7,
+                    Color(color.r, color.g, color.b, 220),
+                    28
+                )
+
+                local faction = (data.factions or {})[fleet.factionID]
+                local tooltip = string.format(
+                    "%s
+%s | Strength %s
+%s%s",
+                    fleet.name,
+                    faction and faction.shortName or fleet.factionID,
+                    tostring(fleet.strength or 0),
+                    string.upper(fleet.status or "unknown"),
+                    fleet.orderType and (" | " .. string.upper(fleet.orderType)) or ""
+                )
+
+                local lines = string.Explode("
+", tooltip)
+                local mouseX, mouseY = self:CursorPos()
+                local boxW, boxH = 265, 76
+                local boxX = math.Clamp(mouseX + 18, 8, width - boxW - 8)
+                local boxY = math.Clamp(mouseY + 18, 8, height - boxH - 8)
+
+                draw.RoundedBox(5, boxX, boxY, boxW, boxH, Color(4, 16, 29, 245))
+                surface.SetDrawColor(color)
+                surface.DrawOutlinedRect(boxX, boxY, boxW, boxH, 1)
+
+                for lineIndex, line in ipairs(lines) do
+                    draw.SimpleText(
+                        line,
+                        lineIndex == 1 and "Convergence.UI.Nav" or "Convergence.UI.Small",
+                        boxX + 12,
+                        boxY + 14 + (lineIndex - 1) * 22,
+                        lineIndex == 1 and color or Theme.GetColor("textMuted"),
+                        TEXT_ALIGN_LEFT,
+                        TEXT_ALIGN_CENTER
+                    )
+                end
+            elseif self.Zoom > 0.95 then
+                draw.SimpleText(
+                    fleet.name,
+                    "Convergence.UI.Small",
+                    x,
+                    y + size + 5,
+                    color,
+                    TEXT_ALIGN_CENTER,
+                    TEXT_ALIGN_TOP
+                )
+            end
         end
     end
 

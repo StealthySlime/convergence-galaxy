@@ -4,19 +4,19 @@
 
 ### Added
 
-- Persistent fleet database and service.
-- GM fleet creation, movement, listing, and deletion.
-- Campaign-time fleet travel and automatic arrivals.
-- Fleet Movement simulation processor.
-- Fleet icons on the holographic galaxy map.
-- Fleet list UI page.
-- Fleet tests and schema migration 4.
+- Persistent fleet orders and mission targets.
+- Move, patrol, defend, reinforce, invade, blockade, escort, retreat, and explore order types.
+- Fleet Orders simulation processor.
+- Initial influence and stability effects from active orders.
+- GM fleet-order commands and automated tests.
+- Directional fleet icons, engine trails, orbital animation, strength-scaled size, and fleet hover details.
+- Database migration 5.
 
 ### Changed
 
-- Addon version increased to `0.5.0`.
-- Database schema increased to `4`.
+- Addon version increased to `0.6.0`.
+- Database schema increased to `5`.
 
-## 0.4.1
+## 0.5.0
 
-- Added holographic galaxy renderer animations.
+- Added persistent fleets and campaign-time travel.

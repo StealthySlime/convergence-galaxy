@@ -99,3 +99,25 @@ DB.RegisterMigration(4, "Persistent fleets", function(database)
         ]]
     })
 end)
+
+
+DB.RegisterMigration(5, "Fleet orders and missions", function(database)
+    return database.Transaction({
+        [[
+            ALTER TABLE convergence_fleets
+            ADD COLUMN order_type TEXT NOT NULL DEFAULT 'idle'
+        ]],
+        [[
+            ALTER TABLE convergence_fleets
+            ADD COLUMN order_planet_id TEXT
+        ]],
+        [[
+            ALTER TABLE convergence_fleets
+            ADD COLUMN order_started_campaign_seconds REAL
+        ]],
+        [[
+            ALTER TABLE convergence_fleets
+            ADD COLUMN order_metadata_json TEXT NOT NULL DEFAULT '{}'
+        ]]
+    })
+end)

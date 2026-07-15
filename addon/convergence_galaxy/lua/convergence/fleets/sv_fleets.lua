@@ -22,6 +22,10 @@ local function uniqueID(name)
     return id
 end
 
+local function decodeMetadata(value)
+    return util.JSONToTable(value or "{}") or {}
+end
+
 local function fromRow(row)
     return {
         id = row.fleet_id,
@@ -32,7 +36,11 @@ local function fromRow(row)
         departureCampaignSeconds = tonumber(row.departure_campaign_seconds),
         arrivalCampaignSeconds = tonumber(row.arrival_campaign_seconds),
         strength = tonumber(row.strength) or 100,
-        status = row.status or "stationed"
+        status = row.status or "stationed",
+        orderType = row.order_type or "idle",
+        orderPlanetID = row.order_planet_id,
+        orderStartedCampaignSeconds = tonumber(row.order_started_campaign_seconds),
+        orderMetadata = decodeMetadata(row.order_metadata_json)
     }
 end
 
@@ -95,8 +103,9 @@ function Fleets.Create(name, factionValue, planetValue, strength, context)
 
     local success, code, message = DB.Execute(string.format(
         [[INSERT INTO convergence_fleets
-        (fleet_id,name,faction_id,current_planet_id,strength,status,created_at,updated_at)
-        VALUES (%s,%s,%s,%s,%d,'stationed',%d,%d)]],
+        (fleet_id,name,faction_id,current_planet_id,strength,status,
+         order_type,order_metadata_json,created_at,updated_at)
+        VALUES (%s,%s,%s,%s,%d,'stationed','idle','{}',%d,%d)]],
         DB.Escape(id), DB.Escape(name), DB.Escape(factionID),
         DB.Escape(planet:GetID()), strength, now, now
     ))
@@ -109,7 +118,9 @@ function Fleets.Create(name, factionValue, planetValue, strength, context)
         factionID = factionID,
         currentPlanetID = planet:GetID(),
         strength = strength,
-        status = "stationed"
+        status = "stationed",
+        orderType = "idle",
+        orderMetadata = {}
     }
 
     Fleets.Cache[id] = fleet
@@ -191,6 +202,16 @@ function Fleets.GetTravelProgress(fleet)
     )
 end
 
+function Fleets.GetETASeconds(fleet)
+    if not fleet or fleet.status ~= "traveling" then return 0 end
+
+    return math.max(
+        (tonumber(fleet.arrivalCampaignSeconds) or 0)
+        - Convergence.Clock.GetCampaignSeconds(),
+        0
+    )
+end
+
 function Fleets.ProcessArrivals()
     local nowCampaign = Convergence.Clock.GetCampaignSeconds()
     local arrivals = 0
@@ -216,6 +237,7 @@ function Fleets.ProcessArrivals()
                 fleet.arrivalCampaignSeconds = nil
                 fleet.status = "stationed"
                 arrivals = arrivals + 1
+
                 Convergence.Events.Publish("fleet.arrived", {
                     fleet = table.Copy(fleet),
                     planetID = destination

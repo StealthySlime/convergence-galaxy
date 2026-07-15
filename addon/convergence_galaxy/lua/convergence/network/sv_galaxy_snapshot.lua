@@ -85,7 +85,10 @@ local function buildSnapshot()
             arrivalCampaignSeconds = fleet.arrivalCampaignSeconds,
             strength = fleet.strength,
             status = fleet.status,
-            progress = Convergence.Fleets.GetTravelProgress(fleet)
+            progress = Convergence.Fleets.GetTravelProgress(fleet),
+            etaCampaignSeconds = Convergence.Fleets.GetETASeconds(fleet),
+            orderType = fleet.orderType or "idle",
+            orderPlanetID = fleet.orderPlanetID
         }
     end
 
