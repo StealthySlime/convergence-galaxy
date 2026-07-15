@@ -64,6 +64,14 @@ concommand.Add("convergence_navigation_status", function(ply)
     print("World travel status:     " .. tostring(
         world.travelStatus or "unknown"
     ))
+    local profile = adapter and adapter.ActiveTravelProfile or nil
+
+    print("Target jump duration:    " .. tostring(
+        profile and profile.desiredSeconds or "Not calculated"
+    ))
+    print("External speed modifier: " .. tostring(
+        profile and profile.externalModifier or "Not calculated"
+    ))
     print("Synchronization:         " .. label(synchronizationPass))
     print("================================================")
 end)

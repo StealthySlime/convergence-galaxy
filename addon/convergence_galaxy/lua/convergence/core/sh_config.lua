@@ -27,6 +27,19 @@ Config.World = {
     PlayerTaskForceName = "Galactic Defense Coalition Task Force",
     DefaultPlanetID = "coruscant",
     ProtectNPCSpawning = true,
+
+    SWU = {
+        -- Raw SWU travel estimates are converted into a cinematic duration.
+        -- With the defaults, ordinary jumps take roughly 45 seconds to 3 minutes.
+        MinimumHyperspaceSeconds = 45,
+        MaximumHyperspaceSeconds = 180,
+        EstimateDivisor = 60,
+
+        -- A large non-hyperspace position change is treated as a GM GOTO.
+        TeleportDeltaThreshold = 50,
+        PlanetArrivalRadius = 8
+    },
+
     MainMaps = {
         ["rp_venator"] = true,
         ["rp_star_destroyer"] = true

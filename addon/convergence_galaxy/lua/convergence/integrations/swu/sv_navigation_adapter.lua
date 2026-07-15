@@ -7,6 +7,13 @@ Adapter.LastHyperspace = nil
 Adapter.LastDestinationName = nil
 Adapter.LastPosition = nil
 Adapter.PatchedComputer = nil
+Adapter.PatchedController = nil
+Adapter.OriginalControllerSetShipPos = nil
+Adapter.ActiveTravelProfile = nil
+
+local function getSWUConfig()
+    return (Convergence.Config.World and Convergence.Config.World.SWU) or {}
+end
 
 function Adapter:IsAvailable()
     return SWU ~= nil
@@ -49,8 +56,56 @@ function Adapter:ResolvePlanet(name)
     return Convergence.PlanetService.Get(normalized)
 end
 
+function Adapter:IsConvergenceDestination(name)
+    return self:ResolvePlanet(name) ~= nil
+end
 
-function Adapter:ResolveNearestPlanet(position)
+function Adapter:GetMappedPosition(planetID)
+    local mapping = (Convergence.SWUPlanetMapping or {})[
+        Convergence.NormalizeID(planetID)
+    ]
+
+    return mapping and mapping.position or nil
+end
+
+function Adapter:FindSWUPlanetEntry(name)
+    if not self:IsAvailable() then
+        return nil
+    end
+
+    local normalized = Convergence.NormalizeID(name)
+    local computer = SWU.NavigationComputer
+
+    for _, entry in ipairs(computer.allPlanets or computer.Planets or {}) do
+        if istable(entry)
+            and Convergence.NormalizeID(entry.name) == normalized
+            and isvector(entry.pos) then
+            return entry
+        end
+    end
+
+    return nil
+end
+
+function Adapter:RefreshMappedCoordinates()
+    if not self:IsAvailable() then
+        return
+    end
+
+    for planetID, mapping in pairs(Convergence.SWUPlanetMapping or {}) do
+        local entry = self:FindSWUPlanetEntry(
+            mapping.navigationName or planetID
+        )
+
+        -- Existing SWU universe data is authoritative. This also means the GM
+        -- Ship Position/GOTO screen and Convergence use exactly the same point.
+        if entry and isvector(entry.pos) then
+            mapping.position = Vector(entry.pos.x, entry.pos.y, entry.pos.z)
+        end
+    end
+end
+
+function Adapter:ResolveNearestRegisteredPlanet(position)
     if not isvector(position) then
         return nil, math.huge
     end
@@ -72,51 +127,151 @@ function Adapter:ResolveNearestPlanet(position)
     return nearestPlanet, nearestDistanceSquared
 end
 
-function Adapter:ReconcileArrival(position)
+function Adapter:ReconcileGMPosition(position, actor)
     if self:IsInHyperspace() or not isvector(position) then
         return false
     end
 
-    local nearestPlanet, distanceSquared = self:ResolveNearestPlanet(position)
+    self:RefreshMappedCoordinates()
 
-    -- SWU exits close to the selected universe coordinate. The generous
-    -- threshold tolerates offsets applied by the navigation addon while still
-    -- preventing unrelated positions from changing the current planet.
-    local threshold = 5000
-    local withinArrivalRange = nearestPlanet
-        and distanceSquared <= threshold * threshold
+    local planet, distanceSquared =
+        self:ResolveNearestRegisteredPlanet(position)
 
-    if not withinArrivalRange then
+    local radius = math.max(
+        tonumber(getSWUConfig().PlanetArrivalRadius) or 8,
+        0.1
+    )
+
+    if not planet or distanceSquared > radius * radius then
         return false
     end
 
-    local world = Convergence.World.GetState()
+    local state = Convergence.World.GetState()
 
-    if world.currentPlanetID ~= nearestPlanet:GetID()
-        or world.travelStatus == "hyperspace" then
-        Convergence.World.Arrive(nearestPlanet:GetID(), position)
-
-        hook.Run(
-            "ConvergenceNavigationHyperspaceEnded",
-            self.ID,
-            nearestPlanet:GetID()
-        )
+    if state.currentPlanetID == planet:GetID()
+        and state.travelStatus ~= "hyperspace" then
+        Convergence.World.SetShipPosition(position)
+        return true
     end
+
+    Convergence.World.Arrive(planet:GetID(), position)
+
+    Convergence.Events.Publish("world.gm_teleport.arrived", {
+        planetID = planet:GetID(),
+        actor = IsValid(actor) and actor:SteamID64() or "unknown",
+        position = {
+            x = position.x,
+            y = position.y,
+            z = position.z
+        }
+    }, {
+        actor = actor,
+        source = "swu_gm_goto",
+        reason = "SWU GM Ship Position/GOTO changed the task-force location."
+    })
+
+    hook.Run(
+        "ConvergenceNavigationGMTeleport",
+        self.ID,
+        planet:GetID(),
+        actor
+    )
 
     return true
 end
 
-function Adapter:IsConvergenceDestination(name)
-    local normalized = Convergence.NormalizeID(name)
-
-    for planetID, mapping in pairs(Convergence.SWUPlanetMapping or {}) do
-        if normalized == Convergence.NormalizeID(planetID)
-            or normalized == Convergence.NormalizeID(mapping.navigationName) then
-            return true
-        end
+function Adapter:GetRawTravelSeconds()
+    if not self:IsAvailable() then
+        return 0
     end
 
-    return false
+    local computer = SWU.NavigationComputer
+    local target = computer:GetTargetVector()
+    local ship = SWU.Controller:GetShipPos()
+    local acceleration =
+        SWU.GlobalConfig
+        and SWU.GlobalConfig.hyperspaceAcceleration
+        and tonumber(SWU.GlobalConfig.hyperspaceAcceleration.x)
+        or 0
+
+    if not isvector(target) or not isvector(ship) or acceleration <= 0 then
+        return tonumber(computer:GetEstimatedJumpTime()) or 0
+    end
+
+    return ship:Distance(target) / acceleration
+end
+
+function Adapter:GetDesiredTravelSeconds(rawSeconds)
+    local settings = getSWUConfig()
+    local minimum = math.max(
+        tonumber(settings.MinimumHyperspaceSeconds) or 45,
+        5.1
+    )
+    local maximum = math.max(
+        tonumber(settings.MaximumHyperspaceSeconds) or 180,
+        minimum
+    )
+    local divisor = math.max(
+        tonumber(settings.EstimateDivisor) or 60,
+        0.01
+    )
+
+    return math.Clamp(rawSeconds / divisor, minimum, maximum)
+end
+
+function Adapter:ApplyTravelProfile()
+    if not self:IsAvailable() then
+        return false
+    end
+
+    local computer = SWU.NavigationComputer
+    local rawSeconds = self:GetRawTravelSeconds()
+
+    if rawSeconds <= 0 then
+        return false
+    end
+
+    local desiredSeconds = self:GetDesiredTravelSeconds(rawSeconds)
+    local baseModifier = 1
+    local baseConVar = SWU.Configuration
+        and SWU.Configuration:GetConVar("swu_hyperspace_speed_modifier")
+
+    if baseConVar then
+        baseModifier = math.max(baseConVar:GetFloat(), 0.01)
+    end
+
+    local externalModifier = math.max(
+        rawSeconds / desiredSeconds / baseModifier,
+        0.01
+    )
+
+    local externalConVar = SWU.Configuration
+        and SWU.Configuration:GetConVar(
+            "swu_external_hyperspace_speed_modifier"
+        )
+
+    if externalConVar and externalConVar.SetFloat then
+        externalConVar:SetFloat(externalModifier)
+    else
+        RunConsoleCommand(
+            "swu_external_hyperspace_speed_modifier",
+            tostring(externalModifier)
+        )
+    end
+
+    -- Keep the visible SWU estimate useful to players instead of displaying
+    -- several real-world hours while the external modifier shortens the jump.
+    computer:SetEstimatedJumpTime(math.max(desiredSeconds, 5.1))
+
+    self.ActiveTravelProfile = {
+        rawSeconds = rawSeconds,
+        desiredSeconds = desiredSeconds,
+        baseModifier = baseModifier,
+        externalModifier = externalModifier,
+        targetPlanet = computer:GetTargetPlanet()
+    }
+
+    return true, self.ActiveTravelProfile
 end
 
 function Adapter:PatchNavigationComputer()
@@ -139,17 +294,73 @@ function Adapter:PatchNavigationComputer()
     computer.SelectPlanet = function(entity, planetName)
         originalSelectPlanet(entity, planetName)
 
-        -- SWU intentionally disables its lever when EstimatedJumpTime is below
-        -- five seconds. Custom Convergence destinations must remain usable.
-        if Adapter:IsConvergenceDestination(planetName)
-            and entity:GetTargetPlanet() == planetName
-            and entity:GetEstimatedJumpTime() > 0
-            and entity:GetEstimatedJumpTime() < 5 then
-            entity:SetEstimatedJumpTime(5.1)
+        if Adapter:IsConvergenceDestination(planetName) then
+            timer.Simple(
+                (tonumber(entity.ProgressCalculationDuration) or 5) + 0.05,
+                function()
+                    if IsValid(entity)
+                        and entity:GetTargetPlanet() == planetName then
+                        Adapter:ApplyTravelProfile()
+                    end
+                end
+            )
         end
     end
 
     self.PatchedComputer = computer
+    return true
+end
+
+function Adapter:PatchController()
+    if not self:IsAvailable() then
+        return false
+    end
+
+    local controller = SWU.Controller
+
+    if self.PatchedController == controller then
+        return true
+    end
+
+    if not isfunction(controller.SetShipPos) then
+        return false
+    end
+
+    local originalSetShipPos = controller.SetShipPos
+    self.OriginalControllerSetShipPos = originalSetShipPos
+
+    controller.SetShipPos = function(entity, newPosition)
+        local oldPosition = entity:GetShipPos()
+        originalSetShipPos(entity, newPosition)
+
+        if not isvector(oldPosition) or not isvector(newPosition) then
+            return
+        end
+
+        if entity:IsInHyperspace() then
+            return
+        end
+
+        local threshold = math.max(
+            tonumber(getSWUConfig().TeleportDeltaThreshold) or 50,
+            0.1
+        )
+
+        if oldPosition:DistToSqr(newPosition) < threshold * threshold then
+            return
+        end
+
+        -- SWU's admin configuration uses swu_setShipPos, which calls this
+        -- setter directly. Reconcile on the next tick after the new value is
+        -- fully networked and persisted.
+        timer.Simple(0, function()
+            if IsValid(entity) then
+                Adapter:ReconcileGMPosition(entity:GetShipPos())
+            end
+        end)
+    end
+
+    self.PatchedController = controller
     return true
 end
 
@@ -160,8 +371,6 @@ function Adapter:SyncPlanets()
 
     local computer = SWU.NavigationComputer
 
-    -- Rebuild from SWU's authoritative universe first, then append only the
-    -- Convergence destinations that do not already exist.
     if isfunction(computer.LoadPlanets) then
         computer:LoadPlanets()
     else
@@ -174,7 +383,20 @@ function Adapter:SyncPlanets()
 
     for _, entry in ipairs(allPlanets) do
         if istable(entry) and entry.name then
-            seen[Convergence.NormalizeID(entry.name)] = true
+            seen[Convergence.NormalizeID(entry.name)] = entry
+
+            local planet = self:ResolvePlanet(entry.name)
+            local mapping = planet
+                and (Convergence.SWUPlanetMapping or {})[planet:GetID()]
+                or nil
+
+            if mapping and isvector(entry.pos) then
+                mapping.position = Vector(
+                    entry.pos.x,
+                    entry.pos.y,
+                    entry.pos.z
+                )
+            end
         end
     end
 
@@ -183,7 +405,7 @@ function Adapter:SyncPlanets()
         local key = Convergence.NormalizeID(name)
 
         if isvector(mapping.position) and not seen[key] then
-            allPlanets[#allPlanets + 1] = {
+            local entry = {
                 name = name,
                 pos = Vector(
                     mapping.position.x,
@@ -191,7 +413,9 @@ function Adapter:SyncPlanets()
                     mapping.position.z
                 )
             }
-            seen[key] = true
+
+            allPlanets[#allPlanets + 1] = entry
+            seen[key] = entry
         end
     end
 
@@ -199,7 +423,8 @@ function Adapter:SyncPlanets()
 
     computer.allPlanets = allPlanets
     computer.Planets = table.Copy(allPlanets)
-    computer.PlanetsPerPage = math.max(tonumber(computer.PlanetsPerPage) or 5, 1)
+    computer.PlanetsPerPage =
+        math.max(tonumber(computer.PlanetsPerPage) or 5, 1)
 
     if computer.SetSearchTerm then
         computer:SetSearchTerm("")
@@ -220,7 +445,9 @@ function Adapter:SyncPlanets()
         computer:UpdatePageValue()
     end
 
+    self:RefreshMappedCoordinates()
     self:PatchNavigationComputer()
+    self:PatchController()
 
     return true
 end
@@ -231,6 +458,7 @@ function Adapter:Poll()
     end
 
     self:PatchNavigationComputer()
+    self:PatchController()
 
     local position = self:GetShipPosition()
     local inHyperspace = self:IsInHyperspace()
@@ -266,9 +494,6 @@ function Adapter:Poll()
                 )
             end
         else
-            -- SWU's selected destination is authoritative after a completed
-            -- jump. GetShipPos may use a local/visual coordinate system that
-            -- does not exactly match injected universe coordinates.
             local worldDestination =
                 Convergence.World.GetState().destinationPlanetID
 
@@ -307,11 +532,20 @@ timer.Create("Convergence.Navigation.SWU.PlanetSync", 2, 0, function()
     end
 end)
 
-hook.Add("OnEntityCreated", "Convergence.Navigation.SWU.ComputerCreated", function(entity)
+hook.Add("OnEntityCreated", "Convergence.Navigation.SWU.EntitiesCreated", function(entity)
     timer.Simple(1, function()
-        if IsValid(entity) and entity:GetClass() == "swu_navigation_computer" then
+        if not IsValid(entity) then
+            return
+        end
+
+        local class = entity:GetClass()
+
+        if class == "swu_navigation_computer" then
             Adapter.PatchedComputer = nil
             Adapter:SyncPlanets()
+        elseif class == "swu_controller" then
+            Adapter.PatchedController = nil
+            Adapter:PatchController()
         end
     end)
 end)
@@ -324,7 +558,7 @@ concommand.Add("convergence_swu_sync", function(ply)
     local success, message = Adapter:SyncPlanets()
 
     print(success
-        and "[Convergence] SWU navigation planets synchronized and lever compatibility applied."
+        and "[Convergence] SWU planets, coordinates, GM GOTO tracking, and travel profile synchronized."
         or "[Convergence] " .. tostring(message))
 end)
 
@@ -339,15 +573,45 @@ concommand.Add("convergence_swu_jump_status", function(ply)
     end
 
     local computer = SWU.NavigationComputer
+    local profile = Adapter.ActiveTravelProfile
 
     print("========== SWU Jump Status ==========")
-    print("Target:              " .. tostring(computer:GetTargetPlanet()))
-    print("Loading:             " .. tostring(computer:GetLoading()))
-    print("Estimated jump time: " .. tostring(computer:GetEstimatedJumpTime()))
-    print("Can jump:            " .. tostring(computer:CanJump()))
-    print("Controller allowed:  " .. tostring(
+    print("Target:                 " .. tostring(computer:GetTargetPlanet()))
+    print("Loading:                " .. tostring(computer:GetLoading()))
+    print("Displayed jump time:    " .. tostring(computer:GetEstimatedJumpTime()))
+    print("Can jump:               " .. tostring(computer:CanJump()))
+    print("Controller allowed:     " .. tostring(
         SWU.Controller:GetCanJumpIntoHyperspace()
     ))
-    print("Hyperspace state:    " .. tostring(SWU.Controller:GetHyperspace()))
+    print("Hyperspace state:       " .. tostring(SWU.Controller:GetHyperspace()))
+    print("Raw SWU estimate:       " .. tostring(
+        profile and profile.rawSeconds or Adapter:GetRawTravelSeconds()
+    ))
+    print("Target travel duration: " .. tostring(
+        profile and profile.desiredSeconds or "Not calculated"
+    ))
+    print("External speed modifier:" .. tostring(
+        profile and profile.externalModifier or "Not calculated"
+    ))
     print("=====================================")
+end)
+
+concommand.Add("convergence_swu_reconcile_position", function(ply)
+    if IsValid(ply) and not ply:IsAdmin() then
+        return
+    end
+
+    if not Adapter:IsAvailable() then
+        print("[Convergence] SWU navigation is unavailable.")
+        return
+    end
+
+    local success = Adapter:ReconcileGMPosition(
+        SWU.Controller:GetShipPos(),
+        ply
+    )
+
+    print(success
+        and "[Convergence] Current SWU position matched and synchronized."
+        or "[Convergence] Current SWU position is not close to a registered Convergence planet.")
 end)
