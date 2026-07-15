@@ -1,11 +1,5 @@
 local placeholders = {
     {
-        id = "fleets",
-        name = "Fleets",
-        order = 50,
-        description = "Persistent fleet management will be added in a future phase."
-    },
-    {
         id = "research",
         name = "Research",
         order = 60,

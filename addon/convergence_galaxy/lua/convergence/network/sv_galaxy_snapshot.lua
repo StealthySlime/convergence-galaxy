@@ -16,7 +16,8 @@ local function buildSnapshot()
         },
         planets = {},
         factions = {},
-        alliances = {}
+        alliances = {},
+        fleets = {}
     }
 
     for id, planet in pairs(Convergence.PlanetService.GetAll()) do
@@ -69,6 +70,22 @@ local function buildSnapshot()
                 a = alliance.color.a
             },
             description = alliance.description
+        }
+    end
+
+
+    for id, fleet in pairs(Convergence.Fleets.GetAll()) do
+        snapshot.fleets[id] = {
+            id = fleet.id,
+            name = fleet.name,
+            factionID = fleet.factionID,
+            currentPlanetID = fleet.currentPlanetID,
+            destinationPlanetID = fleet.destinationPlanetID,
+            departureCampaignSeconds = fleet.departureCampaignSeconds,
+            arrivalCampaignSeconds = fleet.arrivalCampaignSeconds,
+            strength = fleet.strength,
+            status = fleet.status,
+            progress = Convergence.Fleets.GetTravelProgress(fleet)
         }
     end
 

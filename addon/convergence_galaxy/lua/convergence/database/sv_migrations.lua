@@ -74,3 +74,28 @@ DB.RegisterMigration(3, "Planet faction influence", function(database)
         ]]
     })
 end)
+
+
+DB.RegisterMigration(4, "Persistent fleets", function(database)
+    return database.Transaction({
+        [[
+            CREATE TABLE IF NOT EXISTS convergence_fleets (
+                fleet_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                faction_id TEXT NOT NULL,
+                current_planet_id TEXT NOT NULL,
+                destination_planet_id TEXT,
+                departure_campaign_seconds REAL,
+                arrival_campaign_seconds REAL,
+                strength INTEGER NOT NULL DEFAULT 100,
+                status TEXT NOT NULL DEFAULT 'stationed',
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            )
+        ]],
+        [[
+            CREATE INDEX IF NOT EXISTS convergence_fleets_planet
+            ON convergence_fleets (current_planet_id)
+        ]]
+    })
+end)

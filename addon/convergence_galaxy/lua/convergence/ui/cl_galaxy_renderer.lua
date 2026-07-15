@@ -388,6 +388,48 @@ function PANEL:Paint(width, height)
         )
     end
 
+
+    for _, fleet in pairs(data.fleets or {}) do
+        local origin = self.NodePositions[fleet.currentPlanetID]
+
+        if origin then
+            local x = origin.x
+            local y = origin.y - 32
+
+            if fleet.status == "traveling" and fleet.destinationPlanetID then
+                local destination = self.NodePositions[fleet.destinationPlanetID]
+
+                if destination then
+                    local progress = math.Clamp(tonumber(fleet.progress) or 0, 0, 1)
+                    x = Lerp(progress, origin.x, destination.x)
+                    y = Lerp(progress, origin.y, destination.y)
+                end
+            end
+
+            local color = Theme.GetFactionColor(fleet.factionID, data)
+            local size = 8
+
+            surface.SetDrawColor(color)
+            draw.NoTexture()
+            surface.DrawPoly({
+                {x = x, y = y - size},
+                {x = x + size, y = y},
+                {x = x, y = y + size},
+                {x = x - size, y = y}
+            })
+
+            draw.SimpleText(
+                fleet.name,
+                "Convergence.UI.Small",
+                x,
+                y + 12,
+                color,
+                TEXT_ALIGN_CENTER,
+                TEXT_ALIGN_TOP
+            )
+        end
+    end
+
     drawScanlines(width, height)
 
     draw.SimpleText(
