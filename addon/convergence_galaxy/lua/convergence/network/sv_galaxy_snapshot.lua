@@ -11,6 +11,9 @@ local function buildSnapshot()
         version = Convergence.Version,
         generatedAt = os.time(),
         clock = Convergence.Clock.GetTimeTable(),
+        galaxy = {
+            routes = table.Copy(Convergence.Config.Galaxy.Routes or {})
+        },
         planets = {},
         factions = {},
         alliances = {}
@@ -23,8 +26,11 @@ local function buildSnapshot()
         local dominantAlliance, dominantAllianceInfluence =
             Convergence.Influence.GetDominantAlliance(id)
 
+        local definition = planet:GetDefinition()
+
         snapshot.planets[id] = {
             state = planet:ToPublicTable(),
+            map = table.Copy(definition.galaxy or {}),
             influence = Convergence.Influence.GetPlanetInfluence(id),
             dominantFactionID = dominantFaction and dominantFaction.id or nil,
             dominantFactionInfluence = dominantFactionInfluence or 0,

@@ -23,6 +23,18 @@ Config.Simulation = {
     StopOnProcessorError = false
 }
 
+Config.Galaxy = {
+    MinZoom = 0.65,
+    MaxZoom = 2.5,
+    DefaultZoom = 1,
+    NodeRadius = 13,
+    Routes = {
+        {"coruscant", "tatooine"},
+        {"coruscant", "reach"},
+        {"reach", "tatooine"}
+    }
+}
+
 Config.StabilityStates = {
     {
         id = "collapse",
@@ -66,17 +78,32 @@ Config.Planets = {
     {
         id = "coruscant",
         name = "Coruscant",
-        defaultStability = 100
+        defaultStability = 100,
+        galaxy = {
+            x = 0.24,
+            y = 0.58,
+            sector = "Core Worlds"
+        }
     },
     {
         id = "tatooine",
         name = "Tatooine",
-        defaultStability = 75
+        defaultStability = 75,
+        galaxy = {
+            x = 0.77,
+            y = 0.64,
+            sector = "Outer Rim"
+        }
     },
     {
         id = "reach",
         name = "Reach",
-        defaultStability = 60
+        defaultStability = 60,
+        galaxy = {
+            x = 0.56,
+            y = 0.27,
+            sector = "Epsilon Eridani"
+        }
     }
 }
 
@@ -91,33 +118,14 @@ function Convergence.ValidateConfig()
 
     if not istable(Config.Clock) then
         errors[#errors + 1] = "Clock configuration must be a table."
-    else
-        if not isnumber(Config.Clock.TickInterval) or Config.Clock.TickInterval < 1 then
-            errors[#errors + 1] = "Clock TickInterval must be at least 1 second."
-        end
-
-        if not isnumber(Config.Clock.SecondsPerCampaignHour)
-            or Config.Clock.SecondsPerCampaignHour < 1 then
-            errors[#errors + 1] = "Clock SecondsPerCampaignHour must be at least 1."
-        end
-
-        if not isnumber(Config.Clock.SaveEveryTicks) or Config.Clock.SaveEveryTicks < 1 then
-            errors[#errors + 1] = "Clock SaveEveryTicks must be at least 1."
-        end
     end
 
     if not istable(Config.Simulation) then
         errors[#errors + 1] = "Simulation configuration must be a table."
-    else
-        if not isnumber(Config.Simulation.MaxQueuedActionsPerTick)
-            or Config.Simulation.MaxQueuedActionsPerTick < 1 then
-            errors[#errors + 1] = "Simulation MaxQueuedActionsPerTick must be at least 1."
-        end
+    end
 
-        if not isnumber(Config.Simulation.MaxProcessorMilliseconds)
-            or Config.Simulation.MaxProcessorMilliseconds < 1 then
-            errors[#errors + 1] = "Simulation MaxProcessorMilliseconds must be at least 1."
-        end
+    if not istable(Config.Galaxy) then
+        errors[#errors + 1] = "Galaxy configuration must be a table."
     end
 
     if not istable(Config.StabilityStates) or #Config.StabilityStates == 0 then
@@ -135,12 +143,6 @@ function Convergence.ValidateConfig()
             errors[#errors + 1] = "Duplicate stability state ID: " .. id
         else
             seenStates[id] = true
-        end
-
-        if not isnumber(state.minimum) or not isnumber(state.maximum) then
-            errors[#errors + 1] = "Stability state " .. id .. " has invalid bounds."
-        elseif state.minimum > state.maximum then
-            errors[#errors + 1] = "Stability state " .. id .. " has reversed bounds."
         end
     end
 

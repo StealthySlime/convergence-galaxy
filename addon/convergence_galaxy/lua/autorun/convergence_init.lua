@@ -1,7 +1,7 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.3.1"
+Convergence.Version = "0.4.0"
 Convergence.SchemaVersion = 3
 Convergence.Root = "convergence/"
 
@@ -91,6 +91,7 @@ addServer(ROOT .. "commands/sv_ui_commands.lua")
 addClient(ROOT .. "ui/cl_theme.lua")
 addClient(ROOT .. "ui/cl_registry.lua")
 addClient(ROOT .. "ui/cl_components.lua")
+addClient(ROOT .. "ui/cl_galaxy_renderer.lua")
 addClientDirectory(ROOT .. "ui/modules/")
 addClient(ROOT .. "ui/cl_main.lua")
 

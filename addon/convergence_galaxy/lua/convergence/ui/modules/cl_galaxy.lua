@@ -41,90 +41,30 @@ Convergence.UI.RegisterModule({
         body:Dock(FILL)
         body.Paint = nil
 
-        local left = Components.CreateCard(body, "PLANETS")
-        left:Dock(LEFT)
-        left:SetWide(math.max(ScrW() * 0.36, 430))
-        left:DockMargin(0, 0, 12, 0)
-
-        local scroll = vgui.Create("DScrollPanel", left)
-        scroll:Dock(FILL)
-
-        for id, planetData in SortedPairs(data.planets or {}) do
-            local state = planetData.state or {}
-
-            local row = vgui.Create("DButton", scroll)
-            row:Dock(TOP)
-            row:SetTall(60)
-            row:DockMargin(0, 0, 0, 6)
-            row:SetText("")
-
-            row.Paint = function(button, width, height)
-                local selected = Convergence.UI.SelectedPlanetID == id
-                local fill = selected
-                    and Theme.GetColor("accentDim")
-                    or Color(12, 30, 48, 230)
-
-                if button:IsHovered() and not selected then
-                    fill = Color(20, 48, 73, 235)
-                end
-
-                draw.RoundedBox(4, 0, 0, width, height, fill)
-
-                local stabilityColor = Theme.GetStabilityColor(state.stability)
-
-                draw.SimpleText(
-                    state.name or id,
-                    "Convergence.UI.Nav",
-                    12,
-                    16,
-                    Theme.GetColor("text"),
-                    TEXT_ALIGN_LEFT,
-                    TEXT_ALIGN_CENTER
-                )
-
-                draw.SimpleText(
-                    string.format("%s%% — %s", state.stability or 0, state.stateName or "Unknown"),
-                    "Convergence.UI.Small",
-                    12,
-                    40,
-                    stabilityColor,
-                    TEXT_ALIGN_LEFT,
-                    TEXT_ALIGN_CENTER
-                )
-
-                draw.RoundedBox(
-                    2,
-                    width - 128,
-                    24,
-                    112,
-                    10,
-                    Color(4, 12, 18, 220)
-                )
-
-                draw.RoundedBox(
-                    2,
-                    width - 128,
-                    24,
-                    math.floor(112 * math.Clamp((state.stability or 0) / 100, 0, 1)),
-                    10,
-                    stabilityColor
-                )
-            end
-
-            row.DoClick = function()
-                Convergence.UI.SelectedPlanetID = id
-                Convergence.UI.RefreshActiveModule()
-            end
-        end
+        local mapCard = Components.CreateCard(body, "GALAXY MAP")
+        mapCard:Dock(FILL)
+        mapCard:DockMargin(0, 0, 12, 0)
 
         local inspector = Components.CreateCard(body, "PLANET INSPECTOR")
-        inspector:Dock(FILL)
+        inspector:Dock(RIGHT)
+        inspector:SetWide(math.max(ScrW() * 0.31, 420))
+
+        local renderer = vgui.Create("ConvergenceGalaxyRenderer", mapCard)
+        renderer:Dock(FILL)
+        renderer:SetGalaxyData(data)
 
         local selectedID = Convergence.UI.SelectedPlanetID
 
         if not selectedID or not (data.planets or {})[selectedID] then
             selectedID = next(data.planets or {})
             Convergence.UI.SelectedPlanetID = selectedID
+        end
+
+        renderer:SetSelectedPlanet(selectedID)
+
+        renderer.OnPlanetSelected = function(_, id)
+            Convergence.UI.SelectedPlanetID = id
+            Convergence.UI.RefreshActiveModule()
         end
 
         local selected = selectedID and data.planets[selectedID] or nil
@@ -163,6 +103,11 @@ Convergence.UI.RegisterModule({
             string.format("%s%% %s", state.stability or 0, string.upper(state.stateName or "Unknown"))
         )
 
+        Components.CreateStatRow(
+            inspector,
+            "Sector",
+            selected.map and selected.map.sector or "Unknown"
+        )
         Components.CreateStatRow(
             inspector,
             "Dominant Alliance",
