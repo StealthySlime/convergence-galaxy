@@ -54,7 +54,7 @@ Convergence.UI.RegisterModule({
 
             local row = vgui.Create("DButton", scroll)
             row:Dock(TOP)
-            row:SetTall(54)
+            row:SetTall(60)
             row:DockMargin(0, 0, 0, 6)
             row:SetText("")
 
@@ -70,11 +70,13 @@ Convergence.UI.RegisterModule({
 
                 draw.RoundedBox(4, 0, 0, width, height, fill)
 
+                local stabilityColor = Theme.GetStabilityColor(state.stability)
+
                 draw.SimpleText(
                     state.name or id,
                     "Convergence.UI.Nav",
                     12,
-                    15,
+                    16,
                     Theme.GetColor("text"),
                     TEXT_ALIGN_LEFT,
                     TEXT_ALIGN_CENTER
@@ -84,10 +86,28 @@ Convergence.UI.RegisterModule({
                     string.format("%s%% — %s", state.stability or 0, state.stateName or "Unknown"),
                     "Convergence.UI.Small",
                     12,
-                    38,
-                    Theme.GetColor("textMuted"),
+                    40,
+                    stabilityColor,
                     TEXT_ALIGN_LEFT,
                     TEXT_ALIGN_CENTER
+                )
+
+                draw.RoundedBox(
+                    2,
+                    width - 128,
+                    24,
+                    112,
+                    10,
+                    Color(4, 12, 18, 220)
+                )
+
+                draw.RoundedBox(
+                    2,
+                    width - 128,
+                    24,
+                    math.floor(112 * math.Clamp((state.stability or 0) / 100, 0, 1)),
+                    10,
+                    stabilityColor
                 )
             end
 
@@ -103,9 +123,8 @@ Convergence.UI.RegisterModule({
         local selectedID = Convergence.UI.SelectedPlanetID
 
         if not selectedID or not (data.planets or {})[selectedID] then
-            local firstID = next(data.planets or {})
-            selectedID = firstID
-            Convergence.UI.SelectedPlanetID = firstID
+            selectedID = next(data.planets or {})
+            Convergence.UI.SelectedPlanetID = selectedID
         end
 
         local selected = selectedID and data.planets[selectedID] or nil
@@ -126,13 +145,24 @@ Convergence.UI.RegisterModule({
         local dominantAlliance = data.alliances
             and data.alliances[selected.dominantAllianceID or ""]
             or nil
+        local stabilityColor = Theme.GetStabilityColor(state.stability)
 
         Components.CreateStatRow(inspector, "Planet", state.name or selectedID)
         Components.CreateStatRow(
             inspector,
             "Stability",
-            string.format("%s%% — %s", state.stability or 0, state.stateName or "Unknown")
+            string.format("%s%% — %s", state.stability or 0, state.stateName or "Unknown"),
+            stabilityColor
         )
+
+        Components.CreateProgressBar(
+            inspector,
+            state.stability or 0,
+            100,
+            stabilityColor,
+            string.format("%s%% %s", state.stability or 0, string.upper(state.stateName or "Unknown"))
+        )
+
         Components.CreateStatRow(
             inspector,
             "Dominant Alliance",
@@ -141,7 +171,8 @@ Convergence.UI.RegisterModule({
         Components.CreateStatRow(
             inspector,
             "Dominant Faction",
-            dominantFaction and dominantFaction.name or "None"
+            dominantFaction and dominantFaction.name or "None",
+            dominantFaction and Theme.GetFactionColor(dominantFaction.id, data) or nil
         )
 
         local influenceTitle = Components.CreateLabel(
@@ -153,12 +184,25 @@ Convergence.UI.RegisterModule({
         influenceTitle:Dock(TOP)
         influenceTitle:DockMargin(0, 14, 0, 8)
 
+        local maxInfluence = 1
+        for _, amount in pairs(selected.influence or {}) do
+            maxInfluence = math.max(maxInfluence, tonumber(amount) or 0)
+        end
+
         for factionID, amount in SortedPairs(selected.influence or {}) do
             local faction = data.factions and data.factions[factionID]
-            Components.CreateStatRow(
+            local factionColor = Theme.GetFactionColor(factionID, data)
+
+            Components.CreateProgressBar(
                 inspector,
-                faction and faction.shortName or factionID,
-                string.format("%.2f", tonumber(amount) or 0)
+                tonumber(amount) or 0,
+                maxInfluence,
+                factionColor,
+                string.format(
+                    "%s  %.2f",
+                    faction and faction.shortName or factionID,
+                    tonumber(amount) or 0
+                )
             )
         end
 

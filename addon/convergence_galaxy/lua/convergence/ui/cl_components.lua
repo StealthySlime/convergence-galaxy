@@ -39,7 +39,7 @@ function Components.CreateLabel(parent, text, font, color)
     return label
 end
 
-function Components.CreateStatRow(parent, labelText, valueText)
+function Components.CreateStatRow(parent, labelText, valueText, valueColor)
     local row = vgui.Create("DPanel", parent)
     row:SetTall(28)
     row:Dock(TOP)
@@ -59,12 +59,49 @@ function Components.CreateStatRow(parent, labelText, valueText)
         row,
         valueText,
         "Convergence.UI.Body",
-        Theme.GetColor("text")
+        valueColor or Theme.GetColor("text")
     )
     value:Dock(FILL)
     value:SetContentAlignment(6)
 
     return row, value
+end
+
+function Components.CreateProgressBar(parent, value, maximum, color, labelText)
+    maximum = math.max(tonumber(maximum) or 100, 1)
+    value = math.Clamp(tonumber(value) or 0, 0, maximum)
+
+    local panel = vgui.Create("DPanel", parent)
+    panel:SetTall(34)
+    panel:Dock(TOP)
+    panel:DockMargin(0, 0, 0, 8)
+
+    panel.Paint = function(self, width, height)
+        draw.RoundedBox(4, 0, 0, width, height, Color(5, 15, 25, 220))
+
+        local fraction = value / maximum
+
+        draw.RoundedBox(
+            4,
+            0,
+            0,
+            math.floor(width * fraction),
+            height,
+            color
+        )
+
+        draw.SimpleText(
+            labelText or string.format("%.0f / %.0f", value, maximum),
+            "Convergence.UI.Small",
+            10,
+            height / 2,
+            Theme.GetColor("text"),
+            TEXT_ALIGN_LEFT,
+            TEXT_ALIGN_CENTER
+        )
+    end
+
+    return panel
 end
 
 function Components.CreateEmptyState(parent, title, description)

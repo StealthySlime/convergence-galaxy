@@ -10,8 +10,8 @@ UI.SelectedPlanetID = UI.SelectedPlanetID or nil
 local function createNavigation(frame)
     local navigation = vgui.Create("DPanel", frame)
     navigation:Dock(LEFT)
-    navigation:SetWide(220)
-    navigation:DockPadding(10, 80, 10, 12)
+    navigation:SetWide(230)
+    navigation:DockPadding(10, 84, 10, 12)
 
     navigation.Paint = function(self, width, height)
         draw.RoundedBox(0, 0, 0, width, height, Color(5, 16, 27, 252))
@@ -31,7 +31,7 @@ local function createNavigation(frame)
     subtitle:SetText("CONVERGENCE NETWORK")
     subtitle:SetFont("Convergence.UI.Small")
     subtitle:SetTextColor(Theme.GetColor("textMuted"))
-    subtitle:SetPos(14, 50)
+    subtitle:SetPos(14, 52)
     subtitle:SizeToContents()
 
     UI.Navigation = navigation
@@ -75,7 +75,7 @@ end
 local function createHeader(frame)
     local header = vgui.Create("DPanel", frame)
     header:Dock(TOP)
-    header:SetTall(62)
+    header:SetTall(64)
     header:DockPadding(18, 0, 14, 0)
 
     header.Paint = function(self, width, height)
@@ -86,43 +86,40 @@ local function createHeader(frame)
 
     local moduleTitle = vgui.Create("DLabel", header)
     moduleTitle:Dock(LEFT)
-    moduleTitle:SetWide(430)
+    moduleTitle:SetWide(500)
     moduleTitle:SetFont("Convergence.UI.Title")
     moduleTitle:SetTextColor(Theme.GetColor("text"))
     moduleTitle:SetText("GALAXY")
 
-    local refresh = vgui.Create("DButton", header)
-    refresh:Dock(RIGHT)
-    refresh:SetWide(120)
-    refresh:DockMargin(8, 12, 0, 12)
-    refresh:SetText("REFRESH")
-    refresh:SetFont("Convergence.UI.Nav")
-    refresh:SetTextColor(Theme.GetColor("text"))
+    local actions = vgui.Create("DPanel", header)
+    actions:Dock(RIGHT)
+    actions:SetWide(250)
+    actions:DockMargin(0, 10, 0, 10)
+    actions.Paint = nil
 
-    refresh.Paint = function(self, width, height)
-        Theme.DrawButton(self, width, height, "REFRESH", false)
-    end
-
-    refresh.DoClick = function()
-        Convergence.RequestGalaxySnapshot()
-    end
-
-    local close = vgui.Create("DButton", header)
+    local close = vgui.Create("DButton", actions)
     close:Dock(RIGHT)
     close:SetWide(90)
-    close:DockMargin(8, 12, 0, 12)
-    close:SetText("CLOSE")
-    close:SetFont("Convergence.UI.Nav")
-    close:SetTextColor(Theme.GetColor("text"))
-
+    close:DockMargin(8, 0, 0, 0)
+    close:SetText("")
     close.Paint = function(self, width, height)
         Theme.DrawButton(self, width, height, "CLOSE", false)
     end
-
     close.DoClick = function()
         if IsValid(UI.Frame) then
             UI.Frame:Close()
         end
+    end
+
+    local refresh = vgui.Create("DButton", actions)
+    refresh:Dock(RIGHT)
+    refresh:SetWide(120)
+    refresh:SetText("")
+    refresh.Paint = function(self, width, height)
+        Theme.DrawButton(self, width, height, "REFRESH", false)
+    end
+    refresh.DoClick = function()
+        Convergence.RequestGalaxySnapshot()
     end
 
     UI.ModuleTitle = moduleTitle
@@ -165,13 +162,19 @@ function UI.RefreshActiveModule()
         return
     end
 
+    local container = vgui.Create("DPanel", UI.Content)
+    container:Dock(FILL)
+    container:SetAlpha(0)
+    container.Paint = nil
+    container:AlphaTo(255, 0.15, 0)
+
     local ok, result = xpcall(function()
-        return module:create(UI.Content)
+        return module:create(container)
     end, debug.traceback)
 
     if not ok then
         Convergence.UI.Components.CreateEmptyState(
-            UI.Content,
+            container,
             "Module Error",
             tostring(result)
         )
@@ -179,11 +182,9 @@ function UI.RefreshActiveModule()
 end
 
 function UI.Refresh()
-    if not IsValid(UI.Frame) then
-        return
+    if IsValid(UI.Frame) then
+        UI.RefreshActiveModule()
     end
-
-    UI.RefreshActiveModule()
 end
 
 function UI.Open()

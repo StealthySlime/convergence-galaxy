@@ -19,8 +19,42 @@ Theme.Colors = {
     danger = Color(235, 85, 85)
 }
 
+Theme.FactionFallbackColors = {
+    republic = Color(75, 145, 255),
+    unsc = Color(70, 200, 220),
+    covenant = Color(175, 90, 230),
+    cis = Color(230, 135, 70)
+}
+
 function Theme.GetColor(name)
     return Theme.Colors[name] or color_white
+end
+
+function Theme.GetFactionColor(factionID, data)
+    local faction = data and data.factions and data.factions[factionID or ""]
+
+    if faction and faction.color then
+        return Color(
+            tonumber(faction.color.r) or 255,
+            tonumber(faction.color.g) or 255,
+            tonumber(faction.color.b) or 255,
+            tonumber(faction.color.a) or 255
+        )
+    end
+
+    return Theme.FactionFallbackColors[factionID or ""]
+        or Theme.GetColor("accent")
+end
+
+function Theme.GetStabilityColor(value)
+    value = tonumber(value) or 0
+
+    if value >= 81 then return Theme.GetColor("success") end
+    if value >= 61 then return Color(125, 210, 120) end
+    if value >= 41 then return Theme.GetColor("warning") end
+    if value >= 21 then return Color(240, 125, 70) end
+
+    return Theme.GetColor("danger")
 end
 
 function Theme.DrawPanel(width, height, alternate)
