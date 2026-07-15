@@ -56,3 +56,21 @@ DB.RegisterMigration(2, "Persistent galaxy clock", function(database)
         )
     })
 end)
+
+DB.RegisterMigration(3, "Planet faction influence", function(database)
+    return database.Transaction({
+        [[
+            CREATE TABLE IF NOT EXISTS convergence_planet_influence (
+                planet_id TEXT NOT NULL,
+                faction_id TEXT NOT NULL,
+                influence REAL NOT NULL DEFAULT 0,
+                updated_at INTEGER NOT NULL,
+                PRIMARY KEY (planet_id, faction_id)
+            )
+        ]],
+        [[
+            CREATE INDEX IF NOT EXISTS convergence_planet_influence_planet
+            ON convergence_planet_influence (planet_id)
+        ]]
+    })
+end)

@@ -1,8 +1,8 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.2.1"
-Convergence.SchemaVersion = 2
+Convergence.Version = "0.2.3"
+Convergence.SchemaVersion = 3
 Convergence.Root = "convergence/"
 
 local ROOT = Convergence.Root
@@ -30,6 +30,15 @@ local function addClient(path)
     include(path)
 end
 
+local function addSharedDirectory(path)
+    local files = file.Find(path .. "*.lua", "LUA")
+    table.sort(files)
+
+    for _, fileName in ipairs(files) do
+        addShared(path .. fileName)
+    end
+end
+
 -- Core bootstrap
 addShared(ROOT .. "core/sh_constants.lua")
 addShared(ROOT .. "core/sh_util.lua")
@@ -38,6 +47,13 @@ addShared(ROOT .. "core/sh_modules.lua")
 addShared(ROOT .. "core/sh_events.lua")
 addShared(ROOT .. "core/sh_config.lua")
 addShared(ROOT .. "core/sh_planets.lua")
+
+-- Data-driven faction and alliance definitions
+addShared(ROOT .. "factions/sh_factions.lua")
+addSharedDirectory(ROOT .. "factions/definitions/")
+
+addShared(ROOT .. "alliances/sh_alliances.lua")
+addSharedDirectory(ROOT .. "alliances/definitions/")
 
 -- Database foundation
 addServer(ROOT .. "database/sv_database.lua")
@@ -48,16 +64,21 @@ addServer(ROOT .. "simulation/sv_engine.lua")
 addServer(ROOT .. "simulation/sv_clock.lua")
 addServer(ROOT .. "simulation/processors/sv_planet_processor.lua")
 
--- Planet and campaign services
+-- Campaign services
+addServer(ROOT .. "alliances/sv_influence.lua")
 addServer(ROOT .. "planets/sv_planet_service.lua")
 addServer(ROOT .. "stability/sv_stability.lua")
 addServer(ROOT .. "network/sv_network.lua")
+
+-- Commands and diagnostics
 addServer(ROOT .. "commands/sv_commands.lua")
 addServer(ROOT .. "commands/sv_diagnostics.lua")
 addServer(ROOT .. "commands/sv_planet_tests.lua")
 addServer(ROOT .. "commands/sv_event_tests.lua")
 addServer(ROOT .. "commands/sv_clock_commands.lua")
 addServer(ROOT .. "commands/sv_simulation_commands.lua")
+addServer(ROOT .. "commands/sv_faction_commands.lua")
+addServer(ROOT .. "commands/sv_alliance_commands.lua")
 
 -- Optional integrations
 addServer(ROOT .. "integrations/sam/sv_sam.lua")
@@ -92,6 +113,16 @@ if SERVER then
             Convergence.Log.Error("Planets", "Planet service initialization failed.", {
                 code = planetCode,
                 error = planetMessage
+            })
+        end
+
+        local influenceReady, influenceCode, influenceMessage =
+            Convergence.Influence.Initialize()
+
+        if not influenceReady then
+            Convergence.Log.Error("Influence", "Influence service initialization failed.", {
+                code = influenceCode,
+                error = influenceMessage
             })
         end
 

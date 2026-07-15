@@ -4,41 +4,30 @@
 
 ### Added
 
-- Deterministic Simulation Engine.
-- Ordered simulation processor registry.
-- Processor priorities and configurable execution cadence.
-- Protected processor execution and performance-budget warnings.
-- Queued simulation actions.
-- Simulation tick history and timing metrics.
-- Start, stop, manual-step, status, queue-test, and automated-test commands.
-- Initial Planet State Processor.
-- Simulation events for lifecycle, ticks, processors, and queued actions.
+- Data-driven Alliance Framework.
+- Galactic Defense Coalition containing the Republic and UNSC.
+- Convergence Invaders containing the Covenant and CIS.
+- Alliance diplomacy relationships.
+- Persistent per-planet faction influence.
+- Dominant faction and dominant alliance calculations.
+- Influence administration and reporting commands.
+- Alliance diagnostics and automated tests.
+- Database schema migration 3.
 
 ### Changed
 
-- Addon version increased to `0.2.1`.
-- Galaxy Clock ticks now drive Simulation Engine ticks.
+- Addon version increased to `0.2.3`.
+- Database schema increased to version `3`.
+- Initial faction test now expects Republic and UNSC as player factions.
+
+## 0.2.2
+
+- Added data-driven Faction Framework.
+
+## 0.2.1
+
+- Added deterministic Simulation Engine.
 
 ## 0.2.0
 
-- Added persistent Galaxy Clock and schema migration 2.
-
-## 0.1.4
-
-- Added framework Event Bus.
-
-## 0.1.3
-
-- Added cached Planet Service and planet object API.
-
-## 0.1.2
-
-- Fixed database initialization and added stage diagnostics.
-
-## 0.1.1
-
-- Added SQLite abstraction and migrations.
-
-## 0.1.0
-
-- Added initial persistent galaxy scaffold.
+- Added persistent Galaxy Clock.

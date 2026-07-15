@@ -28,6 +28,13 @@ concommand.Add("convergence_diagnostics", function(ply)
     print("Planet bootstrap:   " .. statusLabel(status.bootstrap))
     print("Database ready:     " .. statusLabel(status.ready))
     print("Planet service:     " .. statusLabel(planetServiceReady))
+    print("Faction registry:   " .. statusLabel(
+        Convergence.Factions.Count() > 0
+    ))
+    print("Registered factions: ".. tostring(Convergence.Factions.Count()))
+    print("Enemy factions:     " .. tostring(
+        table.Count(Convergence.Factions.GetEnemies())
+    ))
     print("Event bus:          PASS")
     print("Simulation Engine:  " .. statusLabel(simulationReady))
     print("Simulation running: " .. statusLabel(
