@@ -1,10 +1,13 @@
 Convergence.Config = Convergence.Config or {}
 
-Convergence.Config.DefaultStability = 100
-Convergence.Config.MinimumStability = 0
-Convergence.Config.MaximumStability = 100
+local Config = Convergence.Config
 
-Convergence.Config.StabilityStates = {
+Config.Debug = false
+Config.DefaultStability = 100
+Config.MinimumStability = 0
+Config.MaximumStability = 100
+
+Config.StabilityStates = {
     {
         id = "collapse",
         name = "Collapse",
@@ -43,7 +46,7 @@ Convergence.Config.StabilityStates = {
     }
 }
 
-Convergence.Config.Planets = {
+Config.Planets = {
     {
         id = "coruscant",
         name = "Coruscant",
@@ -60,3 +63,57 @@ Convergence.Config.Planets = {
         defaultStability = 60
     }
 }
+
+function Convergence.ValidateConfig()
+    local errors = {}
+
+    if not isnumber(Config.MinimumStability) or not isnumber(Config.MaximumStability) then
+        errors[#errors + 1] = "Stability bounds must be numeric."
+    elseif Config.MinimumStability >= Config.MaximumStability then
+        errors[#errors + 1] = "Minimum stability must be lower than maximum stability."
+    end
+
+    if not istable(Config.StabilityStates) or #Config.StabilityStates == 0 then
+        errors[#errors + 1] = "At least one stability state must be configured."
+    end
+
+    local seenStates = {}
+
+    for index, state in ipairs(Config.StabilityStates or {}) do
+        local id = Convergence.NormalizeID(state.id)
+
+        if id == "" then
+            errors[#errors + 1] = "Stability state #" .. index .. " has no valid ID."
+        elseif seenStates[id] then
+            errors[#errors + 1] = "Duplicate stability state ID: " .. id
+        else
+            seenStates[id] = true
+        end
+
+        if not isnumber(state.minimum) or not isnumber(state.maximum) then
+            errors[#errors + 1] = "Stability state " .. id .. " has invalid bounds."
+        elseif state.minimum > state.maximum then
+            errors[#errors + 1] = "Stability state " .. id .. " has reversed bounds."
+        end
+    end
+
+    local seenPlanets = {}
+
+    for index, planet in ipairs(Config.Planets or {}) do
+        local id = Convergence.NormalizeID(planet.id)
+
+        if id == "" then
+            errors[#errors + 1] = "Planet #" .. index .. " has no valid ID."
+        elseif seenPlanets[id] then
+            errors[#errors + 1] = "Duplicate planet ID: " .. id
+        else
+            seenPlanets[id] = true
+        end
+    end
+
+    Convergence.Log.MinimumLevel = Config.Debug
+        and Convergence.Constants.LOG_LEVELS.DEBUG
+        or Convergence.Constants.LOG_LEVELS.INFO
+
+    return #errors == 0, errors
+end

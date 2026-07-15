@@ -1,10 +1,13 @@
 Convergence = Convergence or {}
-Convergence.Version = "0.1.0"
+
 Convergence.Name = "Convergence Galaxy"
+Convergence.Version = "0.1.0"
+Convergence.SchemaVersion = 1
+Convergence.Root = "convergence/"
 
-local root = "convergence/"
+local ROOT = Convergence.Root
 
-local function includeShared(path)
+local function addShared(path)
     if SERVER then
         AddCSLuaFile(path)
     end
@@ -12,35 +15,58 @@ local function includeShared(path)
     include(path)
 end
 
-local function includeServer(path)
+local function addServer(path)
     if SERVER then
         include(path)
     end
 end
 
-local function includeClient(path)
+local function addClient(path)
     if SERVER then
         AddCSLuaFile(path)
-    else
-        include(path)
+        return
+    end
+
+    include(path)
+end
+
+-- Core bootstrap
+addShared(ROOT .. "core/sh_constants.lua")
+addShared(ROOT .. "core/sh_util.lua")
+addShared(ROOT .. "core/sh_log.lua")
+addShared(ROOT .. "core/sh_modules.lua")
+addShared(ROOT .. "core/sh_config.lua")
+addShared(ROOT .. "core/sh_planets.lua")
+
+-- Persistent services
+addServer(ROOT .. "database/sv_database.lua")
+addServer(ROOT .. "stability/sv_stability.lua")
+addServer(ROOT .. "network/sv_network.lua")
+addServer(ROOT .. "commands/sv_commands.lua")
+
+-- Optional integrations
+addServer(ROOT .. "integrations/sam/sv_sam.lua")
+addServer(ROOT .. "integrations/swu/sv_swu.lua")
+
+-- Client services
+addClient(ROOT .. "network/cl_network.lua")
+addClient(ROOT .. "ui/cl_planet_status.lua")
+addClient(ROOT .. "integrations/swu/cl_swu.lua")
+
+local valid, errors = Convergence.ValidateConfig()
+
+if not valid then
+    for _, message in ipairs(errors) do
+        Convergence.Log.Error("Config", message)
     end
 end
 
-includeShared(root .. "core/sh_config.lua")
-includeShared(root .. "core/sh_util.lua")
-includeShared(root .. "core/sh_planets.lua")
-
-includeServer(root .. "database/sv_database.lua")
-includeServer(root .. "stability/sv_stability.lua")
-includeServer(root .. "network/sv_network.lua")
-includeServer(root .. "commands/sv_commands.lua")
-includeServer(root .. "integrations/sam/sv_sam.lua")
-includeServer(root .. "integrations/swu/sv_swu.lua")
-
-includeClient(root .. "network/cl_network.lua")
-includeClient(root .. "ui/cl_planet_status.lua")
-includeClient(root .. "integrations/swu/cl_swu.lua")
+Convergence.Modules.InitializeAll()
 
 hook.Run("ConvergenceLoaded", Convergence.Version)
-
-print(string.format("[%s] Loaded version %s", Convergence.Name, Convergence.Version))
+Convergence.Log.Info("Core", string.format(
+    "%s %s loaded in the %s realm.",
+    Convergence.Name,
+    Convergence.Version,
+    SERVER and "server" or "client"
+))
