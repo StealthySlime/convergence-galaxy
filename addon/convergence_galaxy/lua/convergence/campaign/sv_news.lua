@@ -252,6 +252,39 @@ function News.Initialize()
     )
 
     Convergence.Events.Subscribe(
+        "ai.decision.made",
+        function(event)
+            local decision = event.payload.decision or {}
+            local planet = decision.planetID
+                and Convergence.PlanetService.Get(decision.planetID)
+
+            News.Publish({
+                headline = "STRATEGIC COMMAND UPDATE",
+                subheadline = string.format(
+                    "%s — %s",
+                    string.upper(tostring(decision.factionID or "Unknown")),
+                    string.upper(
+                        string.gsub(
+                            tostring(decision.action or "observe"),
+                            "_",
+                            " "
+                        )
+                    )
+                ),
+                body = tostring(decision.detail or "No additional details."),
+                category = "ai_decision",
+                severity = decision.action == "invade"
+                    or decision.action == "generate_operation"
+                        and "warning"
+                        or "info",
+                planetID = decision.planetID,
+                factionID = decision.factionID
+            })
+        end,
+        {owner = "galactic_news"}
+    )
+
+    Convergence.Events.Subscribe(
         "fleet.arrived",
         function(event)
             local fleet = event.payload.fleet or {}

@@ -20,7 +20,9 @@ Facade.Aliases = Facade.Aliases or {
     Clock = "clock",
     Alliances = "alliances",
     FleetOrders = "fleet_orders",
-    Lifecycle = "lifecycle"
+    Lifecycle = "lifecycle",
+    FactionAI = "faction_ai",
+    OperationGenerator = "operation_generator"
 }
 
 local function resolve(alias)

@@ -83,6 +83,10 @@ local function buildSnapshot(ply, requestedMode)
         strategicIntelligence = mode == MODE_DIRECTOR
             and Convergence.StrategicIntelligence
             and Convergence.StrategicIntelligence.GetAll()
+            or nil,
+        factionAI = mode == MODE_DIRECTOR
+            and Convergence.FactionAI
+            and Convergence.FactionAI.GetStatus()
             or nil
     }
 

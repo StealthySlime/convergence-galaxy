@@ -1,7 +1,7 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.12.0"
+Convergence.Version = "0.13.0"
 Convergence.SchemaVersion = 9
 Convergence.Root = "convergence/"
 
@@ -85,6 +85,8 @@ addServer(ROOT .. "campaign/sv_history.lua")
 addServer(ROOT .. "campaign/sv_notifications.lua")
 addServer(ROOT .. "campaign/sv_news.lua")
 addServer(ROOT .. "campaign/sv_intelligence.lua")
+addServer(ROOT .. "campaign/sv_operation_generator.lua")
+addServer(ROOT .. "campaign/sv_faction_ai.lua")
 addServer(ROOT .. "fleets/sv_fleets.lua")
 addServer(ROOT .. "fleets/sv_orders.lua")
 addServer(ROOT .. "core/sv_lifecycle.lua")
@@ -119,6 +121,7 @@ addServer(ROOT .. "commands/sv_campaign_commands.lua")
 addServer(ROOT .. "commands/sv_history_commands.lua")
 addServer(ROOT .. "commands/sv_living_galaxy_commands.lua")
 addServer(ROOT .. "commands/sv_lifecycle_commands.lua")
+addServer(ROOT .. "commands/sv_ai_commands.lua")
 
 addClient(ROOT .. "ui/cl_theme.lua")
 addClient(ROOT .. "ui/cl_registry.lua")
@@ -256,7 +259,23 @@ if SERVER then
         else
             Convergence.CampaignNotifications.Initialize()
             Convergence.GalacticNews.Initialize()
-            Convergence.StrategicIntelligence.Initialize()
+
+            local intelligenceReady, intelligenceCode, intelligenceMessage =
+                Convergence.StrategicIntelligence.Initialize()
+
+            if not intelligenceReady then
+                Convergence.Log.Error(
+                    "Intelligence",
+                    "Strategic Intelligence initialization failed.",
+                    {
+                        code = intelligenceCode,
+                        error = intelligenceMessage
+                    }
+                )
+            else
+                Convergence.OperationGenerator.Initialize()
+                Convergence.FactionAI.Initialize()
+            end
         end
     end
 end

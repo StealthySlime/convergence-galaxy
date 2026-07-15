@@ -34,6 +34,17 @@ Convergence.UI.RegisterModule({
                 > (tonumber(right.threat) or 0)
         end)
 
+        local labels = {
+            lowStability = "Low Stability",
+            enemyInfluence = "Enemy Influence",
+            enemyFleets = "Enemy Fleet Advantage",
+            activeOperations = "Active Operations",
+            majorOperations = "Major Operations",
+            criticalOperations = "Critical Operations",
+            neighborPressure = "Nearby Enemy Pressure",
+            strategicExposure = "Strategic Exposure"
+        }
+
         for _, assessment in ipairs(ordered) do
             local threat = tonumber(assessment.threat) or 0
             local accent = threat >= 80
@@ -49,14 +60,14 @@ Convergence.UI.RegisterModule({
                 assessment.planetName
             )
             card:Dock(TOP)
-            card:SetTall(255)
+            card:SetTall(510)
             card:DockMargin(12, 12, 12, 0)
 
             Components.CreateStatRow(
                 card,
                 "Threat Level",
                 string.format(
-                    "%s — %.0f%%",
+                    "%s — %.1f%%",
                     assessment.level,
                     threat
                 ),
@@ -67,7 +78,7 @@ Convergence.UI.RegisterModule({
                 threat,
                 100,
                 accent,
-                string.format("%.0f%% THREAT", threat)
+                string.format("%.1f%% THREAT", threat)
             )
             Components.CreateStatRow(
                 card,
@@ -76,13 +87,21 @@ Convergence.UI.RegisterModule({
             )
             Components.CreateStatRow(
                 card,
-                "Friendly Influence",
-                string.format("%.1f", assessment.friendlyInfluence or 0)
+                "Friendly / Enemy Influence",
+                string.format(
+                    "%.1f / %.1f",
+                    assessment.friendlyInfluence or 0,
+                    assessment.enemyInfluence or 0
+                )
             )
             Components.CreateStatRow(
                 card,
-                "Enemy Influence",
-                string.format("%.1f", assessment.enemyInfluence or 0)
+                "Friendly / Enemy Fleet Strength",
+                string.format(
+                    "%.0f / %.0f",
+                    assessment.friendlyFleetStrength or 0,
+                    assessment.enemyFleetStrength or 0
+                )
             )
             Components.CreateStatRow(
                 card,
@@ -90,11 +109,34 @@ Convergence.UI.RegisterModule({
                 tostring(assessment.activeOperations or 0)
             )
 
+            local breakdownTitle = Components.CreateLabel(
+                card,
+                "Threat Breakdown",
+                "Convergence.UI.Nav",
+                Theme.GetColor("accent")
+            )
+            breakdownTitle:Dock(TOP)
+            breakdownTitle:DockMargin(0, 10, 0, 5)
+
+            for key, label in SortedPairs(labels) do
+                local value = assessment.breakdown
+                    and tonumber(assessment.breakdown[key])
+                    or 0
+
+                if value > 0.01 then
+                    Components.CreateStatRow(
+                        card,
+                        label,
+                        string.format("+%.1f", value),
+                        accent
+                    )
+                end
+            end
+
             local recommendation = Components.CreateLabel(
                 card,
-                "Recommendation: " .. tostring(
-                    assessment.recommendation
-                ),
+                "Recommendation: "
+                    .. tostring(assessment.recommendation),
                 "Convergence.UI.Body",
                 accent
             )

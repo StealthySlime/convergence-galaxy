@@ -8,9 +8,24 @@ Intelligence.Cache = Intelligence.Cache or {}
 Intelligence.LastRefresh = 0
 Intelligence.RefreshInterval = 5
 
-local function countOperations(planetID)
+local function routeNeighbors(planetID)
+    local result = {}
+
+    for _, route in ipairs(Convergence.Config.Galaxy.Routes or {}) do
+        if route[1] == planetID then
+            result[#result + 1] = route[2]
+        elseif route[2] == planetID then
+            result[#result + 1] = route[1]
+        end
+    end
+
+    return result
+end
+
+local function operationData(planetID)
     local count = 0
     local critical = 0
+    local major = 0
     local operations = Convergence.ServiceFacade.Operations
 
     for _, event in pairs(
@@ -24,15 +39,22 @@ local function countOperations(planetID)
             if event.priority == "critical" then
                 critical = critical + 1
             end
+
+            if event.difficulty == "major"
+                or event.difficulty == "extreme" then
+                major = major + 1
+            end
         end
     end
 
-    return count, critical
+    return count, critical, major
 end
 
-local function fleetStrengthAtPlanet(planetID)
-    local friendly = 0
-    local enemy = 0
+local function fleetData(planetID)
+    local friendlyStrength = 0
+    local enemyStrength = 0
+    local friendlyCount = 0
+    local enemyCount = 0
     local friendlyIDs = {}
     local enemyIDs = {}
 
@@ -47,19 +69,57 @@ local function fleetStrengthAtPlanet(planetID)
     local fleets = Convergence.ServiceFacade.Fleets
 
     for _, fleet in pairs(fleets and fleets.GetAll() or {}) do
-        if fleet.currentPlanetID == planetID
-            and fleet.status ~= "destroyed" then
+        local atPlanet = fleet.currentPlanetID == planetID
+            or fleet.destinationPlanetID == planetID
+
+        if atPlanet and fleet.status ~= "destroyed" then
             local strength = tonumber(fleet.strength) or 0
 
             if friendlyIDs[fleet.factionID] then
-                friendly = friendly + strength
+                friendlyCount = friendlyCount + 1
+                friendlyStrength = friendlyStrength + strength
             elseif enemyIDs[fleet.factionID] then
-                enemy = enemy + strength
+                enemyCount = enemyCount + 1
+                enemyStrength = enemyStrength + strength
             end
         end
     end
 
-    return friendly, enemy
+    return friendlyStrength, enemyStrength, friendlyCount, enemyCount
+end
+
+local function neighboringEnemyPressure(planetID)
+    local pressure = 0
+
+    for _, neighborID in ipairs(routeNeighbors(planetID)) do
+        local friendly =
+            Convergence.Factions.GetFriendlyInfluence(neighborID)
+        local enemy =
+            Convergence.Factions.GetEnemyInfluence(neighborID)
+
+        if enemy > friendly then
+            pressure = pressure + math.min((enemy - friendly) * 0.18, 8)
+        end
+    end
+
+    return math.min(pressure, 16)
+end
+
+local function strategicValue(planet)
+    local sector = tostring(
+        planet:GetDefinition()
+        and planet:GetDefinition().galaxy
+        and planet:GetDefinition().galaxy.sector
+        or ""
+    )
+
+    if sector == "Core Worlds" then
+        return 95
+    elseif sector == "Epsilon Eridani" then
+        return 80
+    end
+
+    return 55
 end
 
 function Intelligence.AssessPlanet(planetID)
@@ -75,18 +135,43 @@ function Intelligence.AssessPlanet(planetID)
         Convergence.Factions.GetFriendlyInfluence(planetID)
     local enemyInfluence =
         Convergence.Factions.GetEnemyInfluence(planetID)
-    local friendlyFleetStrength, enemyFleetStrength =
-        fleetStrengthAtPlanet(planetID)
-    local operations, criticalOperations = countOperations(planetID)
+    local friendlyFleetStrength, enemyFleetStrength,
+        friendlyFleetCount, enemyFleetCount = fleetData(planetID)
+    local operations, criticalOperations, majorOperations =
+        operationData(planetID)
+    local neighborPressure = neighboringEnemyPressure(planetID)
+    local value = strategicValue(planet)
+
+    local breakdown = {}
+
+    breakdown.lowStability =
+        math.Clamp((100 - stability) * 0.34, 0, 34)
+    breakdown.enemyInfluence =
+        math.Clamp(
+            math.max(enemyInfluence - friendlyInfluence, 0) * 0.42,
+            0,
+            20
+        )
+    breakdown.enemyFleets =
+        math.Clamp(
+            math.max(enemyFleetStrength - friendlyFleetStrength, 0)
+                / 400,
+            0,
+            22
+        )
+    breakdown.activeOperations = math.min(operations * 9, 18)
+    breakdown.majorOperations = math.min(majorOperations * 6, 12)
+    breakdown.criticalOperations = math.min(criticalOperations * 8, 16)
+    breakdown.neighborPressure = neighborPressure
+    breakdown.strategicExposure =
+        math.Clamp((value / 100) * (100 - stability) * 0.08, 0, 8)
 
     local threat = 0
-    threat = threat + math.max(100 - stability, 0) * 0.38
-    threat = threat
-        + math.max(enemyInfluence - friendlyInfluence, 0) * 0.52
-    threat = threat
-        + math.max(enemyFleetStrength - friendlyFleetStrength, 0) * 0.002
-    threat = threat + operations * 11
-    threat = threat + criticalOperations * 14
+
+    for _, contribution in pairs(breakdown) do
+        threat = threat + contribution
+    end
+
     threat = math.Clamp(threat, 0, 100)
 
     local level = "LOW"
@@ -107,11 +192,11 @@ function Intelligence.AssessPlanet(planetID)
     ) then
         level = "HIGH"
         recommendation =
-            "Reinforce the system and prepare a player operation."
+            "Reinforce this system and prepare a player operation."
     elseif threat >= 30 then
         level = "MODERATE"
         recommendation =
-            "Increase patrols and monitor hostile influence."
+            "Increase patrols and monitor hostile activity."
     end
 
     return {
@@ -122,17 +207,23 @@ function Intelligence.AssessPlanet(planetID)
         enemyInfluence = enemyInfluence,
         friendlyFleetStrength = friendlyFleetStrength,
         enemyFleetStrength = enemyFleetStrength,
+        friendlyFleetCount = friendlyFleetCount,
+        enemyFleetCount = enemyFleetCount,
         activeOperations = operations,
         criticalOperations = criticalOperations,
+        majorOperations = majorOperations,
+        neighboringEnemyPressure = neighborPressure,
+        strategicValue = value,
+        breakdown = breakdown,
         threat = threat,
         level = level,
         recommendation = recommendation,
         summary = string.format(
-            "%s threat. Stability %.0f%%, friendly influence %.1f, enemy influence %.1f, active operations %d.",
+            "%s threat. Stability %.0f%%, hostile influence %.1f, enemy fleets %d, active operations %d.",
             level,
             stability,
-            friendlyInfluence,
             enemyInfluence,
+            enemyFleetCount,
             operations
         )
     }
@@ -155,6 +246,7 @@ function Intelligence.Refresh(force)
     Intelligence.Cache = result
     Intelligence.LastRefresh = CurTime()
 
+    hook.Run("ConvergenceIntelligenceRefreshed", result)
     return result
 end
 
@@ -172,6 +264,26 @@ function Intelligence.GetHighestThreat()
     end
 
     return highest
+end
+
+function Intelligence.GetWeakestFriendlyPlanet()
+    local weakest = nil
+
+    for _, assessment in pairs(Intelligence.GetAll()) do
+        local opportunity =
+            (100 - assessment.stability)
+            + assessment.enemyInfluence
+            - assessment.friendlyFleetStrength / 500
+
+        if not weakest or opportunity > weakest.opportunity then
+            weakest = {
+                assessment = assessment,
+                opportunity = opportunity
+            }
+        end
+    end
+
+    return weakest and weakest.assessment or nil
 end
 
 function Intelligence.Initialize()

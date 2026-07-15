@@ -271,6 +271,27 @@ function History.BindEvents()
         })
     end)
 
+    subscribe("ai.decision.made", function(event)
+        local decision = event.payload.decision or {}
+
+        History.Record({
+            category = "ai_decision",
+            eventName = event.name,
+            title = string.format(
+                "%s Strategic Decision",
+                string.upper(tostring(decision.factionID or "Unknown"))
+            ),
+            summary = tostring(decision.detail or decision.action or ""),
+            planetID = decision.planetID,
+            factionID = decision.factionID,
+            severity = decision.action == "invade"
+                or decision.action == "generate_operation"
+                    and "warning"
+                    or "info",
+            details = decision
+        })
+    end)
+
     subscribe("fleet.departed", function(event)
         local fleet = event.payload.fleet or {}
 
