@@ -29,3 +29,30 @@ DB.RegisterMigration(1, "Initial persistent galaxy schema", function(database)
         ]]
     })
 end)
+
+DB.RegisterMigration(2, "Persistent galaxy clock", function(database)
+    return database.Transaction({
+        [[
+            CREATE TABLE IF NOT EXISTS convergence_clock (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                tick_count INTEGER NOT NULL DEFAULT 0,
+                campaign_seconds REAL NOT NULL DEFAULT 0,
+                paused INTEGER NOT NULL DEFAULT 0,
+                time_scale REAL NOT NULL DEFAULT 1,
+                updated_at INTEGER NOT NULL
+            )
+        ]],
+        string.format(
+            [[
+                INSERT OR IGNORE INTO convergence_clock
+                (id, tick_count, campaign_seconds, paused, time_scale, updated_at)
+                VALUES (1, 0, %f, 0, 1, %d)
+            ]],
+            (
+                ((Convergence.Config.Clock.StartingDay or 1) - 1) * 24
+                + (Convergence.Config.Clock.StartingHour or 0)
+            ) * (Convergence.Config.Clock.SecondsPerCampaignHour or 60),
+            os.time()
+        )
+    })
+end)

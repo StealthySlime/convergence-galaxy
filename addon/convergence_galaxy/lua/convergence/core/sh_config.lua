@@ -7,6 +7,15 @@ Config.DefaultStability = 100
 Config.MinimumStability = 0
 Config.MaximumStability = 100
 
+Config.Clock = {
+    TickInterval = 5,
+    SecondsPerCampaignHour = 60,
+    StartingDay = 1,
+    StartingHour = 0,
+    AutoStart = true,
+    SaveEveryTicks = 12
+}
+
 Config.StabilityStates = {
     {
         id = "collapse",
@@ -71,6 +80,23 @@ function Convergence.ValidateConfig()
         errors[#errors + 1] = "Stability bounds must be numeric."
     elseif Config.MinimumStability >= Config.MaximumStability then
         errors[#errors + 1] = "Minimum stability must be lower than maximum stability."
+    end
+
+    if not istable(Config.Clock) then
+        errors[#errors + 1] = "Clock configuration must be a table."
+    else
+        if not isnumber(Config.Clock.TickInterval) or Config.Clock.TickInterval < 1 then
+            errors[#errors + 1] = "Clock TickInterval must be at least 1 second."
+        end
+
+        if not isnumber(Config.Clock.SecondsPerCampaignHour)
+            or Config.Clock.SecondsPerCampaignHour < 1 then
+            errors[#errors + 1] = "Clock SecondsPerCampaignHour must be at least 1."
+        end
+
+        if not isnumber(Config.Clock.SaveEveryTicks) or Config.Clock.SaveEveryTicks < 1 then
+            errors[#errors + 1] = "Clock SaveEveryTicks must be at least 1."
+        end
     end
 
     if not istable(Config.StabilityStates) or #Config.StabilityStates == 0 then

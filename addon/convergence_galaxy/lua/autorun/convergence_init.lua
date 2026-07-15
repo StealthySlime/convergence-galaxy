@@ -1,8 +1,8 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.1.4"
-Convergence.SchemaVersion = 1
+Convergence.Version = "0.2.0"
+Convergence.SchemaVersion = 2
 Convergence.Root = "convergence/"
 
 local ROOT = Convergence.Root
@@ -43,6 +43,9 @@ addShared(ROOT .. "core/sh_planets.lua")
 addServer(ROOT .. "database/sv_database.lua")
 addServer(ROOT .. "database/sv_migrations.lua")
 
+-- Galaxy simulation foundation
+addServer(ROOT .. "simulation/sv_clock.lua")
+
 -- Planet and campaign services
 addServer(ROOT .. "planets/sv_planet_service.lua")
 addServer(ROOT .. "stability/sv_stability.lua")
@@ -51,6 +54,7 @@ addServer(ROOT .. "commands/sv_commands.lua")
 addServer(ROOT .. "commands/sv_diagnostics.lua")
 addServer(ROOT .. "commands/sv_planet_tests.lua")
 addServer(ROOT .. "commands/sv_event_tests.lua")
+addServer(ROOT .. "commands/sv_clock_commands.lua")
 
 -- Optional integrations
 addServer(ROOT .. "integrations/sam/sv_sam.lua")
@@ -85,6 +89,16 @@ if SERVER then
             Convergence.Log.Error("Planets", "Planet service initialization failed.", {
                 code = planetCode,
                 error = planetMessage
+            })
+        end
+
+        local clockReady, clockCode, clockMessage =
+            Convergence.Clock.Initialize()
+
+        if not clockReady then
+            Convergence.Log.Error("Clock", "Galaxy Clock initialization failed.", {
+                code = clockCode,
+                error = clockMessage
             })
         end
     end

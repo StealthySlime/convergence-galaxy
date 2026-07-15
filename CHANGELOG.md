@@ -4,19 +4,24 @@
 
 ### Added
 
-- Framework Event Bus.
-- Priority-based and one-time event subscriptions.
-- Owner-based subscription cleanup.
-- Protected subscriber execution and error isolation.
-- Bounded recent-event history and counters.
-- `core.loaded`, `planet.stability.changed`, and
-  `planet.stability.lock.changed` events.
-- Event Bus status and automated test commands.
+- Persistent Galaxy Clock.
+- Campaign day, hour, minute, and tick tracking.
+- Pause, resume, time-scale, set-time, and advance-time controls.
+- Periodic clock persistence and restart recovery.
+- `clock.ready`, `clock.started`, `clock.stopped`, `clock.tick`,
+  `clock.paused.changed`, `clock.scale.changed`, `clock.time.changed`, and
+  `clock.time.advanced` events.
+- Galaxy Clock diagnostics and automated test command.
+- Schema migration 2 for `convergence_clock`.
 
 ### Changed
 
-- Addon version increased to `0.1.4`.
-- Stability changes now publish structured framework events.
+- Addon version increased to `0.2.0`.
+- Database schema increased to version `2`.
+
+## 0.1.4
+
+- Added framework Event Bus.
 
 ## 0.1.3
 

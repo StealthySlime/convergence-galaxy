@@ -15,6 +15,7 @@ concommand.Add("convergence_diagnostics", function(ply)
     local status = DB.GetStatus()
     local schemaSuccess, schemaOrCode, schemaMessage = DB.GetSchemaVersion()
     local planetServiceReady = Convergence.PlanetService.IsReady()
+    local clockReady = Convergence.Clock.IsReady()
 
     print("========== Convergence Galaxy Diagnostics ==========")
     print("Addon version:      " .. tostring(Convergence.Version))
@@ -27,6 +28,16 @@ concommand.Add("convergence_diagnostics", function(ply)
     print("Database ready:     " .. statusLabel(status.ready))
     print("Planet service:     " .. statusLabel(planetServiceReady))
     print("Event bus:          PASS")
+    print("Galaxy Clock:       " .. statusLabel(clockReady))
+    print("Clock running:      " .. statusLabel(
+        clockReady and Convergence.Clock.IsRunning()
+    ))
+    print("Campaign time:      " .. (
+        clockReady and Convergence.Clock.Format() or "Unavailable"
+    ))
+    print("Clock tick:         " .. tostring(
+        clockReady and Convergence.Clock.GetTickCount() or 0
+    ))
     print("Published events:   " .. tostring(Convergence.Events.PublishedCount))
     print("Event subscribers:  " .. tostring(
         Convergence.Events.GetSubscriberCount()
