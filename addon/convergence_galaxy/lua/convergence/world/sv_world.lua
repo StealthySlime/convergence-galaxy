@@ -76,6 +76,7 @@ function World.Initialize()
     World.State.encounterActive = false
     World.State.currentMap = game.GetMap()
     World.Ready = true
+    Convergence.Services.Register("world", World)
     persist()
 
     Convergence.Events.Publish("world.ready", {

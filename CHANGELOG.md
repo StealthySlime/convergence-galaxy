@@ -2,25 +2,25 @@
 
 ## Unreleased
 
+### Fixed
+
+- Restored the Galaxy Renderer registration after the Phase 5.1 integration.
+- Removed client proxy-planet injection that could conflict with SWU.
+
 ### Added
 
-- Persistent world state and player task-force location.
-- SWU navigation-computer planet injection.
-- SWU physical-starmap proxy planets.
-- SWU hyperspace start/arrival synchronization.
-- Player task-force marker on the Convergence galaxy map.
-- Data-driven planet regions and GMod map associations.
-- GM-only map preparation and map-change commands.
-- Encounter activation and NPC-spawn protection.
-- Database migration 6.
-- World and SWU diagnostics/tests.
+- Formal service registry.
+- Navigation adapter interface.
+- Native SWU navigation adapter.
+- Separate SWU planet mapping file.
+- Navigation diagnostics.
 
 ### Changed
 
-- Addon version increased to `0.7.0`.
-- Database schema increased to `6`.
-- Map transitions are never automatic.
+- Addon version increased to `0.7.1`.
+- SWU is now the sole authority for player navigation and hyperspace.
+- Convergence consumes navigation state without emulating the SWU starmap.
 
-## 0.6.0
+## 0.7.0
 
-- Added persistent fleet orders.
+- Added persistent world state, GM transitions, and encounter protection.

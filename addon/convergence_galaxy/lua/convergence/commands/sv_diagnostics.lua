@@ -53,7 +53,7 @@ concommand.Add("convergence_diagnostics", function(ply)
         Convergence.World and Convergence.World.IsEncounterActive()
     ))
     print("SWU integration:    " .. statusLabel(
-        Convergence.SWUWorld and Convergence.SWUWorld.IsAvailable()
+        Convergence.Navigation and Convergence.Navigation.GetActiveAdapter() ~= nil
     ))
     print("Galaxy Clock:       " .. statusLabel(clockReady))
     print("Clock running:      " .. statusLabel(

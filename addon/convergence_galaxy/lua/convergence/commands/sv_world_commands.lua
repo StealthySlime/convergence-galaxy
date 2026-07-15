@@ -19,7 +19,7 @@ concommand.Add("convergence_world_status", function(ply)
     print("Encounter active: " .. tostring(state.encounterActive))
     print("NPC spawning:     " .. tostring(Convergence.World.CanSpawnNPC()))
     print("SWU available:    " .. tostring(
-        Convergence.SWUWorld and Convergence.SWUWorld.IsAvailable()
+        Convergence.Navigation and Convergence.Navigation.GetActiveAdapter() ~= nil
     ))
     print("==============================================")
 end)

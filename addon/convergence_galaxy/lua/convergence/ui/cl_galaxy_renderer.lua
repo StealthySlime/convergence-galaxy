@@ -527,28 +527,32 @@ function PANEL:Paint(width, height)
 
     local taskForce = data.playerTaskForce
 
-    if taskForce and tonumber(taskForce.mapX) and tonumber(taskForce.mapY) then
+    if taskForce
+        and tonumber(taskForce.mapX)
+        and tonumber(taskForce.mapY) then
+
         local taskX, taskY = mapToScreen(
             self,
             tonumber(taskForce.mapX),
             tonumber(taskForce.mapY)
         )
-        local pulseSize = 10 + ((math.sin(CurTime() * 4) + 1) * 2)
 
-        surface.SetDrawColor(255, 255, 255, 255)
+        local size = 10 + (math.sin(CurTime() * 4) + 1)
+
+        surface.SetDrawColor(120, 220, 255, 255)
         draw.NoTexture()
         surface.DrawPoly({
-            {x = taskX, y = taskY - pulseSize},
-            {x = taskX + pulseSize, y = taskY + pulseSize},
-            {x = taskX, y = taskY + pulseSize * 0.45},
-            {x = taskX - pulseSize, y = taskY + pulseSize}
+            {x = taskX, y = taskY - size},
+            {x = taskX + size, y = taskY + size},
+            {x = taskX, y = taskY + size * 0.35},
+            {x = taskX - size, y = taskY + size}
         })
 
         drawCircleOutline(
             taskX,
             taskY,
-            pulseSize + 7,
-            Color(90, 215, 255, 220),
+            size + 7,
+            Color(100, 215, 255, 210),
             32
         )
 
@@ -556,7 +560,7 @@ function PANEL:Paint(width, height)
             taskForce.name or "PLAYER TASK FORCE",
             "Convergence.UI.Small",
             taskX,
-            taskY + pulseSize + 8,
+            taskY + size + 7,
             Color(120, 220, 255),
             TEXT_ALIGN_CENTER,
             TEXT_ALIGN_TOP
