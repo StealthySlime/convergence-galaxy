@@ -1,7 +1,7 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.1.2"
+Convergence.Version = "0.1.3"
 Convergence.SchemaVersion = 1
 Convergence.Root = "convergence/"
 
@@ -42,11 +42,13 @@ addShared(ROOT .. "core/sh_planets.lua")
 addServer(ROOT .. "database/sv_database.lua")
 addServer(ROOT .. "database/sv_migrations.lua")
 
--- Persistent services
+-- Planet and campaign services
+addServer(ROOT .. "planets/sv_planet_service.lua")
 addServer(ROOT .. "stability/sv_stability.lua")
 addServer(ROOT .. "network/sv_network.lua")
 addServer(ROOT .. "commands/sv_commands.lua")
 addServer(ROOT .. "commands/sv_diagnostics.lua")
+addServer(ROOT .. "commands/sv_planet_tests.lua")
 
 -- Optional integrations
 addServer(ROOT .. "integrations/sam/sv_sam.lua")
@@ -73,6 +75,16 @@ if SERVER then
             code = errorCode,
             error = errorMessage
         })
+    else
+        local planetsReady, planetCode, planetMessage =
+            Convergence.PlanetService.Initialize()
+
+        if not planetsReady then
+            Convergence.Log.Error("Planets", "Planet service initialization failed.", {
+                code = planetCode,
+                error = planetMessage
+            })
+        end
     end
 end
 

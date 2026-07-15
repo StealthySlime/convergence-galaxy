@@ -2,28 +2,30 @@
 
 ## Unreleased
 
-### Fixed
-
-- Database initialization no longer treats a stale `sql.LastError()` from an
-  unrelated addon as a failed Convergence query.
-- Database readiness and schema metadata now complete correctly.
-- Migration transactions now use Garry's Mod's SQLite transaction helpers.
-
 ### Added
 
-- Explicit connection, metadata, migration, and planet-bootstrap status stages.
-- Detailed database diagnostics with PASS/FAIL reporting.
+- Cached server-side Planet Service.
+- Planet object API with stability, state, lock, update time, and revision getters.
+- Planet resolution by ID, display name, and aliases.
+- Planet cache reload and update hooks.
+- Network revision tracking for planet state.
+- Planet Service diagnostic and test commands.
 
 ### Changed
 
-- Addon version increased to `0.1.2`.
+- Addon version increased to `0.1.3`.
+- Stability service now uses the Planet Service cache instead of querying SQLite.
+- Planet console output now uses Planet objects.
+- Client planet updates reject older revisions.
+
+## 0.1.2
+
+- Fixed database initialization.
+- Added stage-specific database diagnostics.
 
 ## 0.1.1
 
-- Added SQLite database abstraction.
-- Added ordered migration registry and runner.
-- Added schema metadata through `convergence_meta`.
-- Added diagnostics command.
+- Added SQLite abstraction and migrations.
 
 ## 0.1.0
 

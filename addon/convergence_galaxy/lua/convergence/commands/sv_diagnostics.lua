@@ -14,6 +14,7 @@ concommand.Add("convergence_diagnostics", function(ply)
     local DB = Convergence.Database
     local status = DB.GetStatus()
     local schemaSuccess, schemaOrCode, schemaMessage = DB.GetSchemaVersion()
+    local planetServiceReady = Convergence.PlanetService.IsReady()
 
     print("========== Convergence Galaxy Diagnostics ==========")
     print("Addon version:      " .. tostring(Convergence.Version))
@@ -24,6 +25,7 @@ concommand.Add("convergence_diagnostics", function(ply)
     print("Migrations:         " .. statusLabel(status.migrations))
     print("Planet bootstrap:   " .. statusLabel(status.bootstrap))
     print("Database ready:     " .. statusLabel(status.ready))
+    print("Planet service:     " .. statusLabel(planetServiceReady))
 
     if schemaSuccess then
         print("Installed schema:   " .. tostring(schemaOrCode))
@@ -37,29 +39,17 @@ concommand.Add("convergence_diagnostics", function(ply)
         print("Last error message: " .. tostring(status.lastErrorMessage))
     end
 
-    local planets = Convergence.GetPlanets()
-    print("Registered planets: " .. table.Count(planets))
+    print("Registered planets: " .. Convergence.PlanetService.Count())
 
-    for id, definition in SortedPairs(planets) do
-        local state, errorCode, errorMessage = DB.GetPlanetState(id)
-
-        if state then
-            print(string.format(
-                " - %s (%s): stability=%s locked=%s",
-                definition.name,
-                id,
-                tostring(state.stability),
-                tostring(tonumber(state.locked) == 1)
-            ))
-        else
-            print(string.format(
-                " - %s (%s): ERROR %s %s",
-                definition.name,
-                id,
-                tostring(errorCode),
-                tostring(errorMessage)
-            ))
-        end
+    for id, planet in SortedPairs(Convergence.PlanetService.GetAll()) do
+        print(string.format(
+            " - %s (%s): stability=%s locked=%s revision=%s",
+            planet:GetName(),
+            id,
+            tostring(planet:GetStability()),
+            tostring(planet:IsStabilityLocked()),
+            tostring(planet:GetRevision())
+        ))
     end
 
     print("====================================================")

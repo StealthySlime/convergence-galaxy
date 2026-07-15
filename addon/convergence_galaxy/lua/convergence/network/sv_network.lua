@@ -5,32 +5,45 @@ Convergence.Network = Convergence.Network or {}
 local Network = Convergence.Network
 
 function Network.WritePlanet(planetID)
-    local planet = Convergence.GetPlanet(planetID)
-    if not planet then return false end
+    local planet = Convergence.PlanetService.Get(planetID)
 
-    local stability = Convergence.Stability.Get(planet.id)
-    local state = Convergence.GetStabilityState(stability)
+    if not planet then
+        return false
+    end
 
-    net.WriteString(planet.id)
-    net.WriteString(planet.name)
-    net.WriteUInt(stability, 7)
-    net.WriteString(state.id)
-    net.WriteString(state.name)
-    net.WriteBool(Convergence.Stability.IsLocked(planet.id))
+    local data = planet:ToPublicTable()
+
+    net.WriteString(data.id)
+    net.WriteString(data.name)
+    net.WriteUInt(data.stability, 7)
+    net.WriteString(data.stateID)
+    net.WriteString(data.stateName)
+    net.WriteBool(data.locked)
+    net.WriteUInt(math.max(data.revision, 0), 32)
 
     return true
 end
 
 function Network.SendPlanet(ply, planetID)
     net.Start("ConvergenceGalaxy.PlanetState")
-    if not Network.WritePlanet(planetID) then return end
+
+    if not Network.WritePlanet(planetID) then
+        return false
+    end
+
     net.Send(ply)
+    return true
 end
 
 function Network.BroadcastPlanet(planetID)
     net.Start("ConvergenceGalaxy.PlanetState")
-    if not Network.WritePlanet(planetID) then return end
+
+    if not Network.WritePlanet(planetID) then
+        return false
+    end
+
     net.Broadcast()
+    return true
 end
 
 net.Receive("ConvergenceGalaxy.RequestPlanetState", function(_, ply)
