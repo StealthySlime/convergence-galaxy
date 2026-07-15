@@ -220,3 +220,42 @@ DB.RegisterMigration(8, "Single-server campaign deployments", function(database)
         ]]
     })
 end)
+
+
+DB.RegisterMigration(9, "Persistent campaign history", function(database)
+    return database.Transaction({
+        [[
+            CREATE TABLE IF NOT EXISTS convergence_campaign_history (
+                history_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                category TEXT NOT NULL,
+                event_name TEXT NOT NULL,
+                title TEXT NOT NULL,
+                summary TEXT NOT NULL DEFAULT '',
+                planet_id TEXT,
+                faction_id TEXT,
+                fleet_id TEXT,
+                operation_id TEXT,
+                outcome TEXT,
+                severity TEXT NOT NULL DEFAULT 'info',
+                details_json TEXT NOT NULL DEFAULT '{}',
+                campaign_day INTEGER NOT NULL,
+                campaign_hour INTEGER NOT NULL,
+                campaign_minute INTEGER NOT NULL,
+                campaign_seconds REAL NOT NULL,
+                created_at INTEGER NOT NULL
+            )
+        ]],
+        [[
+            CREATE INDEX IF NOT EXISTS convergence_campaign_history_created
+            ON convergence_campaign_history (created_at DESC)
+        ]],
+        [[
+            CREATE INDEX IF NOT EXISTS convergence_campaign_history_planet
+            ON convergence_campaign_history (planet_id)
+        ]],
+        [[
+            CREATE INDEX IF NOT EXISTS convergence_campaign_history_operation
+            ON convergence_campaign_history (operation_id)
+        ]]
+    })
+end)

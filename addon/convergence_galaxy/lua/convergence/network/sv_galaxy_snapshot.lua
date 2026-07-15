@@ -73,7 +73,10 @@ local function buildSnapshot(ply, requestedMode)
         fleets = {},
         world = Convergence.World.GetPublicState(),
         campaignEvents = {},
-        activeDeployment = Convergence.Deployments.GetActive()
+        activeDeployment = Convergence.Deployments.GetActive(),
+        campaignHistory = Convergence.CampaignHistory
+            and Convergence.CampaignHistory.GetRecent(150)
+            or {}
     }
 
     for id, planet in pairs(Convergence.PlanetService.GetAll()) do

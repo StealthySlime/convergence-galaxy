@@ -1,8 +1,8 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.9.11"
-Convergence.SchemaVersion = 8
+Convergence.Version = "0.10.0"
+Convergence.SchemaVersion = 9
 Convergence.Root = "convergence/"
 
 local ROOT = Convergence.Root
@@ -80,6 +80,8 @@ addServer(ROOT .. "stability/sv_stability.lua")
 addServer(ROOT .. "world/sv_world.lua")
 addServer(ROOT .. "campaign/sv_campaign_events.lua")
 addServer(ROOT .. "campaign/sv_deployments.lua")
+addServer(ROOT .. "campaign/sv_history.lua")
+addServer(ROOT .. "campaign/sv_notifications.lua")
 addServer(ROOT .. "fleets/sv_fleets.lua")
 addServer(ROOT .. "fleets/sv_orders.lua")
 
@@ -92,6 +94,7 @@ addServer(ROOT .. "integrations/swu/sv_navigation_adapter.lua")
 addClient(ROOT .. "network/cl_network.lua")
 addClient(ROOT .. "network/cl_galaxy_snapshot.lua")
 addClient(ROOT .. "network/cl_director_actions.lua")
+addClient(ROOT .. "campaign/cl_notifications.lua")
 addClient(ROOT .. "integrations/swu/cl_navigation_adapter.lua")
 
 addServer(ROOT .. "commands/sv_commands.lua")
@@ -109,6 +112,7 @@ addServer(ROOT .. "commands/sv_navigation_commands.lua")
 addServer(ROOT .. "commands/sv_ui_commands.lua")
 addServer(ROOT .. "commands/sv_director_commands.lua")
 addServer(ROOT .. "commands/sv_campaign_commands.lua")
+addServer(ROOT .. "commands/sv_history_commands.lua")
 
 addClient(ROOT .. "ui/cl_theme.lua")
 addClient(ROOT .. "ui/cl_registry.lua")
@@ -219,6 +223,18 @@ if SERVER then
                 code = clockCode,
                 error = clockMessage
             })
+        end
+
+        local historyReady, historyCode, historyMessage =
+            Convergence.CampaignHistory.Initialize()
+
+        if not historyReady then
+            Convergence.Log.Error("History", "Campaign history initialization failed.", {
+                code = historyCode,
+                error = historyMessage
+            })
+        else
+            Convergence.CampaignNotifications.Initialize()
         end
     end
 end

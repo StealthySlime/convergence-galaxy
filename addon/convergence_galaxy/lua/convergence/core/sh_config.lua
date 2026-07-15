@@ -47,6 +47,10 @@ Config.World = {
 }
 
 Config.Campaign = {
+    HistorySnapshotLimit = 250,
+    NotificationDurationSeconds = 8,
+    NotifyPlayersOfFleetArrivals = true,
+    NotifyPlayersOfTaskForceTravel = true,
     AIBattleMinimumSeconds = 3600,
     AIBattleMaximumSeconds = 7200,
     MajorBattleMaximumSeconds = 10800,
