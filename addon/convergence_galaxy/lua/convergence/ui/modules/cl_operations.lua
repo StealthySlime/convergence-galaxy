@@ -16,7 +16,7 @@ Convergence.UI.RegisterModule({
             Components.CreateEmptyState(
                 scroll,
                 "No Active Operations",
-                "There are no visible campaign operations at this time."
+                "Galactic Command has no operations available at this time."
             )
             return scroll
         end
@@ -27,10 +27,9 @@ Convergence.UI.RegisterModule({
                 or event.planetID
             local card = Components.CreateCard(scroll, event.name)
             card:Dock(TOP)
-            card:SetTall(250)
+            card:SetTall(event.briefing ~= "" and 330 or 255)
             card:DockMargin(12, 12, 12, 0)
 
-            Components.CreateStatRow(card, "ID", id)
             Components.CreateStatRow(card, "Planet", planetName)
             Components.CreateStatRow(
                 card,
@@ -39,13 +38,17 @@ Convergence.UI.RegisterModule({
             )
             Components.CreateStatRow(
                 card,
-                "Difficulty",
-                string.upper(event.difficulty or "standard")
+                "Mission Type",
+                string.upper(event.eventType or "battle")
             )
             Components.CreateStatRow(
                 card,
-                "Priority",
-                string.upper(event.priority or "normal")
+                "Difficulty / Priority",
+                string.format(
+                    "%s / %s",
+                    string.upper(event.difficulty or "standard"),
+                    string.upper(event.priority or "normal")
+                )
             )
             Components.CreateStatRow(
                 card,
@@ -57,20 +60,32 @@ Convergence.UI.RegisterModule({
             )
 
             if event.secondsRemaining then
-                local minutes = math.ceil(event.secondsRemaining / 60)
-
                 Components.CreateProgressBar(
                     card,
-                    event.secondsRemaining,
-                    math.max(event.secondsRemaining, 1),
-                    Theme.GetColor("warning"),
-                    string.format(
-                        event.playerControlled
-                            and "Held for GM resolution"
-                            or "AI resolution in %d minutes",
-                        minutes
-                    )
+                    1,
+                    1,
+                    event.playerControlled
+                        and Theme.GetColor("success")
+                        or Theme.GetColor("warning"),
+                    event.playerControlled
+                        and "Held for player deployment and GM resolution"
+                        or string.format(
+                            "AI resolution in %dh %02dm",
+                            math.floor(event.secondsRemaining / 3600),
+                            math.floor((event.secondsRemaining % 3600) / 60)
+                        )
                 )
+            end
+
+            if event.briefing and event.briefing ~= "" then
+                local briefing = Components.CreateLabel(
+                    card,
+                    event.briefing,
+                    "Convergence.UI.Body",
+                    Theme.GetColor("textMuted")
+                )
+                briefing:Dock(TOP)
+                briefing:DockMargin(0, 4, 0, 0)
             end
         end
 

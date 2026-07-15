@@ -11,24 +11,16 @@ Convergence.UI.RegisterModule({
         local data = Convergence.GalaxyData or {}
         local director = data.director or {}
         local world = data.world or {}
+        local deployment = data.activeDeployment
+        local events = data.campaignEvents or {}
 
-        if Convergence.UI.Mode ~= "director" then
-            return Components.CreateEmptyState(
-                parent,
-                "Director View Required",
-                "Open the GM map with convergence_director."
-            )
-        end
-
-        local root = vgui.Create("DPanel", parent)
+        local root = vgui.Create("DScrollPanel", parent)
         root:Dock(FILL)
-        root:DockPadding(12, 12, 12, 12)
-        root.Paint = nil
 
         local status = Components.CreateCard(root, "CAMPAIGN DIRECTOR")
         status:Dock(TOP)
-        status:SetTall(245)
-        status:DockMargin(0, 0, 0, 12)
+        status:SetTall(250)
+        status:DockMargin(12, 12, 12, 0)
 
         Components.CreateStatRow(
             status,
@@ -55,47 +47,204 @@ Convergence.UI.RegisterModule({
         )
         Components.CreateStatRow(
             status,
-            "NPC Spawning Allowed",
-            tostring(director.npcSpawningAllowed == true),
-            director.npcSpawningAllowed
+            "Active Deployment",
+            deployment and tostring(deployment.eventID) or "None",
+            deployment
                 and Theme.GetColor("success")
-                or Theme.GetColor("danger")
+                or Theme.GetColor("textMuted")
         )
         Components.CreateStatRow(
             status,
-            "Navigation Adapter",
-            director.navigationAvailable and "ONLINE" or "OFFLINE",
-            director.navigationAvailable
-                and Theme.GetColor("success")
-                or Theme.GetColor("danger")
+            "Visible Operations",
+            tostring(table.Count(events))
         )
-        Components.CreateStatRow(
-            status,
-            "Planets / Fleets",
-            string.format(
-                "%s / %s",
-                tostring(director.registeredPlanetCount or 0),
-                tostring(director.registeredFleetCount or 0)
+
+        local controls = Components.CreateCard(root, "QUICK CONTROLS")
+        controls:Dock(TOP)
+        controls:SetTall(150)
+        controls:DockMargin(12, 12, 12, 0)
+
+        local create = Components.CreateButton(
+            controls,
+            "CREATE OPERATION",
+            function()
+                Convergence.UI.OpenOperationEditor()
+            end
+        )
+        create:Dock(TOP)
+        create:DockMargin(0, 0, 0, 8)
+
+        local encounterRow = vgui.Create("DPanel", controls)
+        encounterRow:Dock(TOP)
+        encounterRow:SetTall(38)
+        encounterRow.Paint = nil
+
+        local encounterStart = Components.CreateButton(
+            encounterRow,
+            "START ENCOUNTER",
+            function()
+                Convergence.Director.Send("encounter_start")
+            end
+        )
+        encounterStart:Dock(LEFT)
+        encounterStart:SetWide(210)
+
+        local encounterEnd = Components.CreateButton(
+            encounterRow,
+            "END ENCOUNTER",
+            function()
+                Convergence.Director.Send("encounter_end")
+            end,
+            true
+        )
+        encounterEnd:Dock(RIGHT)
+        encounterEnd:SetWide(210)
+
+        local deploymentCard = Components.CreateCard(root, "CURRENT DEPLOYMENT")
+        deploymentCard:Dock(TOP)
+        deploymentCard:SetTall(deployment and 260 or 110)
+        deploymentCard:DockMargin(12, 12, 12, 0)
+
+        if deployment then
+            local event = events[deployment.eventID]
+
+            Components.CreateStatRow(
+                deploymentCard,
+                "Operation",
+                event and event.name or deployment.eventID
             )
-        )
+            Components.CreateStatRow(
+                deploymentCard,
+                "Planet",
+                event and event.planetID or "Unknown"
+            )
 
-        local help = Components.CreateCard(root, "GM WORKFLOW")
-        help:Dock(FILL)
+            local outcomes = vgui.Create("DPanel", deploymentCard)
+            outcomes:Dock(TOP)
+            outcomes:SetTall(82)
+            outcomes.Paint = nil
 
-        local label = Components.CreateLabel(
-            help,
-            [[1. Use the SWU navigation console and hyperspace control.
-2. Review arrival and available regions.
-3. Prepare a region with convergence_world_prepare <region>.
-4. Change maps only when the GM is ready.
-5. Activate NPC spawning with convergence_encounter_start.
-6. End the encounter with convergence_encounter_end.
+            local labels = {
+                {"MAJOR VICTORY", "major_victory", false},
+                {"VICTORY", "victory", false},
+                {"DRAW", "draw", false},
+                {"DEFEAT", "defeat", true},
+                {"MAJOR DEFEAT", "major_defeat", true}
+            }
 
-The player map hides secret enemy fleets and internal orders. The Director map receives the complete strategic snapshot.]],
-            "Convergence.UI.Body",
-            Theme.GetColor("textMuted")
-        )
-        label:Dock(FILL)
+            for index, info in ipairs(labels) do
+                local button = Components.CreateButton(
+                    outcomes,
+                    info[1],
+                    function()
+                        Derma_StringRequest(
+                            "Resolve Deployment",
+                            "Optional GM notes:",
+                            "",
+                            function(notes)
+                                Convergence.Director.Send("resolve", function()
+                                    net.WriteString(info[2])
+                                    net.WriteString(notes or "")
+                                end)
+                            end
+                        )
+                    end,
+                    info[3]
+                )
+                button:SetWide(150)
+                button:Dock(LEFT)
+                button:DockMargin(index > 1 and 6 or 0, 0, 0, 0)
+            end
+        else
+            Components.CreateLabel(
+                deploymentCard,
+                "No player deployment is active. Select an operation below and deploy it.",
+                "Convergence.UI.Body",
+                Theme.GetColor("textMuted")
+            ):Dock(TOP)
+        end
+
+        local operations = Components.CreateCard(root, "OPERATIONS MANAGEMENT")
+        operations:Dock(TOP)
+        operations:SetTall(math.max(150, table.Count(events) * 118 + 55))
+        operations:DockMargin(12, 12, 12, 12)
+
+        if table.IsEmpty(events) then
+            Components.CreateLabel(
+                operations,
+                "No campaign operations exist.",
+                "Convergence.UI.Body",
+                Theme.GetColor("textMuted")
+            ):Dock(TOP)
+        else
+            for id, event in SortedPairs(events) do
+                local row = vgui.Create("DPanel", operations)
+                row:Dock(TOP)
+                row:SetTall(105)
+                row:DockMargin(0, 0, 0, 8)
+                row:DockPadding(10, 8, 10, 8)
+
+                row.Paint = function(self, width, height)
+                    draw.RoundedBox(4, 0, 0, width, height, Color(4, 20, 34, 220))
+                end
+
+                local title = Components.CreateLabel(
+                    row,
+                    event.name,
+                    "Convergence.UI.Header",
+                    Theme.GetColor("text")
+                )
+                title:Dock(TOP)
+
+                local info = Components.CreateLabel(
+                    row,
+                    string.format(
+                        "%s | %s | %s | %s",
+                        string.upper(event.status or "unknown"),
+                        tostring(event.planetID),
+                        string.upper(event.difficulty or "standard"),
+                        event.secondsRemaining
+                            and (math.ceil(event.secondsRemaining / 60) .. "m remaining")
+                            or "No timer"
+                    ),
+                    "Convergence.UI.Small",
+                    Theme.GetColor("textMuted")
+                )
+                info:Dock(TOP)
+
+                local buttons = vgui.Create("DPanel", row)
+                buttons:Dock(BOTTOM)
+                buttons:SetTall(34)
+                buttons.Paint = nil
+
+                local deploy = Components.CreateButton(
+                    buttons,
+                    "DEPLOY",
+                    function()
+                        Convergence.Director.Send("deploy", function()
+                            net.WriteString(id)
+                        end)
+                    end
+                )
+                deploy:Dock(LEFT)
+                deploy:SetWide(130)
+                deploy:SetEnabled(not deployment and not event.playerControlled)
+
+                local extend = Components.CreateButton(
+                    buttons,
+                    "+30 MIN",
+                    function()
+                        Convergence.Director.Send("extend", function()
+                            net.WriteString(id)
+                            net.WriteUInt(1800, 32)
+                        end)
+                    end
+                )
+                extend:Dock(LEFT)
+                extend:SetWide(130)
+                extend:DockMargin(8, 0, 0, 0)
+            end
+        end
 
         return root
     end

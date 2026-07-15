@@ -131,3 +131,47 @@ function Components.CreateEmptyState(parent, title, description)
 
     return wrapper
 end
+
+
+function Components.CreateButton(parent, text, onClick, danger)
+    local button = vgui.Create("DButton", parent)
+    button:SetTall(38)
+    button:SetText("")
+    button:SetCursor("hand")
+
+    button.Paint = function(self, width, height)
+        local hovered = self:IsHovered()
+        local base = danger
+            and Theme.GetColor("danger")
+            or Theme.GetColor("accent")
+
+        local alpha = hovered and 245 or 205
+
+        draw.RoundedBox(
+            4,
+            0,
+            0,
+            width,
+            height,
+            Color(base.r, base.g, base.b, alpha)
+        )
+
+        draw.SimpleText(
+            text,
+            "Convergence.UI.Body",
+            width / 2,
+            height / 2,
+            Theme.GetColor("text"),
+            TEXT_ALIGN_CENTER,
+            TEXT_ALIGN_CENTER
+        )
+    end
+
+    button.DoClick = function()
+        if isfunction(onClick) then
+            onClick(button)
+        end
+    end
+
+    return button
+end

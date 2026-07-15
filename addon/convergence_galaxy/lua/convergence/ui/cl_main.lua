@@ -303,3 +303,12 @@ concommand.Add("convergence_ui_registry_client", function()
 
     print("============================================")
 end)
+
+
+concommand.Add("convergence_ui_open_module", function(_, _, args)
+    local id = Convergence.NormalizeID(args[1] or "")
+
+    if id ~= "" and Convergence.UI and Convergence.UI.SetActiveModule then
+        Convergence.UI.SetActiveModule(id)
+    end
+end)

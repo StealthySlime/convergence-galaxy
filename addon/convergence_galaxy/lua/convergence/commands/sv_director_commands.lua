@@ -4,7 +4,7 @@ concommand.Add("convergence_director", function(ply)
         return
     end
 
-    if not ply:IsAdmin() then
+    if not Convergence.Permissions.CanOpenDirector(ply) then
         ply:ChatPrint("[Convergence] Galactic Director access denied.")
         return
     end

@@ -12,7 +12,7 @@ end
 local function normalizeMode(ply, requested)
     requested = Convergence.NormalizeID(requested)
 
-    if requested == MODE_DIRECTOR and IsValid(ply) and ply:IsAdmin() then
+    if requested == MODE_DIRECTOR and Convergence.Permissions.CanOpenDirector(ply) then
         return MODE_DIRECTOR
     end
 

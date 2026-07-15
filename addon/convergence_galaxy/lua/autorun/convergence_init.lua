@@ -1,7 +1,7 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.9.0"
+Convergence.Version = "0.9.5"
 Convergence.SchemaVersion = 8
 Convergence.Root = "convergence/"
 
@@ -85,10 +85,13 @@ addServer(ROOT .. "fleets/sv_orders.lua")
 
 addServer(ROOT .. "network/sv_network.lua")
 addServer(ROOT .. "network/sv_galaxy_snapshot.lua")
+addServer(ROOT .. "network/sv_director_actions.lua")
+addShared(ROOT .. "integrations/sam/sh_permissions.lua")
 addShared(ROOT .. "integrations/swu/sh_planet_mapping.lua")
 addServer(ROOT .. "integrations/swu/sv_navigation_adapter.lua")
 addClient(ROOT .. "network/cl_network.lua")
 addClient(ROOT .. "network/cl_galaxy_snapshot.lua")
+addClient(ROOT .. "network/cl_director_actions.lua")
 addClient(ROOT .. "integrations/swu/cl_navigation_adapter.lua")
 
 addServer(ROOT .. "commands/sv_commands.lua")
@@ -112,6 +115,7 @@ addClient(ROOT .. "ui/cl_registry.lua")
 addClient(ROOT .. "ui/cl_components.lua")
 addClient(ROOT .. "ui/cl_galaxy_renderer.lua")
 addClient(ROOT .. "ui/cl_visibility.lua")
+addClient(ROOT .. "ui/cl_operation_editor.lua")
 addClientDirectory(ROOT .. "ui/modules/")
 addClient(ROOT .. "ui/cl_main.lua")
 
