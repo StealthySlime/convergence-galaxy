@@ -1,7 +1,7 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.2.3"
+Convergence.Version = "0.3.0"
 Convergence.SchemaVersion = 3
 Convergence.Root = "convergence/"
 
@@ -39,6 +39,15 @@ local function addSharedDirectory(path)
     end
 end
 
+local function addClientDirectory(path)
+    local files = file.Find(path .. "*.lua", "LUA")
+    table.sort(files)
+
+    for _, fileName in ipairs(files) do
+        addClient(path .. fileName)
+    end
+end
+
 -- Core bootstrap
 addShared(ROOT .. "core/sh_constants.lua")
 addShared(ROOT .. "core/sh_util.lua")
@@ -48,18 +57,18 @@ addShared(ROOT .. "core/sh_events.lua")
 addShared(ROOT .. "core/sh_config.lua")
 addShared(ROOT .. "core/sh_planets.lua")
 
--- Data-driven faction and alliance definitions
+-- Data definitions
 addShared(ROOT .. "factions/sh_factions.lua")
 addSharedDirectory(ROOT .. "factions/definitions/")
 
 addShared(ROOT .. "alliances/sh_alliances.lua")
 addSharedDirectory(ROOT .. "alliances/definitions/")
 
--- Database foundation
+-- Database
 addServer(ROOT .. "database/sv_database.lua")
 addServer(ROOT .. "database/sv_migrations.lua")
 
--- Galaxy simulation foundation
+-- Simulation
 addServer(ROOT .. "simulation/sv_engine.lua")
 addServer(ROOT .. "simulation/sv_clock.lua")
 addServer(ROOT .. "simulation/processors/sv_planet_processor.lua")
@@ -68,7 +77,12 @@ addServer(ROOT .. "simulation/processors/sv_planet_processor.lua")
 addServer(ROOT .. "alliances/sv_influence.lua")
 addServer(ROOT .. "planets/sv_planet_service.lua")
 addServer(ROOT .. "stability/sv_stability.lua")
+
+-- Networking
 addServer(ROOT .. "network/sv_network.lua")
+addServer(ROOT .. "network/sv_galaxy_snapshot.lua")
+addClient(ROOT .. "network/cl_network.lua")
+addClient(ROOT .. "network/cl_galaxy_snapshot.lua")
 
 -- Commands and diagnostics
 addServer(ROOT .. "commands/sv_commands.lua")
@@ -79,14 +93,18 @@ addServer(ROOT .. "commands/sv_clock_commands.lua")
 addServer(ROOT .. "commands/sv_simulation_commands.lua")
 addServer(ROOT .. "commands/sv_faction_commands.lua")
 addServer(ROOT .. "commands/sv_alliance_commands.lua")
+addServer(ROOT .. "commands/sv_ui_commands.lua")
+
+-- UI framework
+addClient(ROOT .. "ui/cl_theme.lua")
+addClient(ROOT .. "ui/cl_registry.lua")
+addClient(ROOT .. "ui/cl_components.lua")
+addClientDirectory(ROOT .. "ui/modules/")
+addClient(ROOT .. "ui/cl_main.lua")
 
 -- Optional integrations
 addServer(ROOT .. "integrations/sam/sv_sam.lua")
 addServer(ROOT .. "integrations/swu/sv_swu.lua")
-
--- Client services
-addClient(ROOT .. "network/cl_network.lua")
-addClient(ROOT .. "ui/cl_planet_status.lua")
 addClient(ROOT .. "integrations/swu/cl_swu.lua")
 
 local valid, errors = Convergence.ValidateConfig()

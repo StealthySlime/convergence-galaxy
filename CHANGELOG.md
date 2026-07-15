@@ -4,30 +4,31 @@
 
 ### Added
 
-- Data-driven Alliance Framework.
-- Galactic Defense Coalition containing the Republic and UNSC.
-- Convergence Invaders containing the Covenant and CIS.
-- Alliance diplomacy relationships.
-- Persistent per-planet faction influence.
-- Dominant faction and dominant alliance calculations.
-- Influence administration and reporting commands.
-- Alliance diagnostics and automated tests.
-- Database schema migration 3.
+- Full-screen Galactic Command UI framework.
+- Republic holographic theme and reusable UI components.
+- Data-driven client UI-module registry.
+- Galaxy, Planets, Factions, and Alliances pages.
+- Placeholder Fleets, Research, Events, and GM Controls pages.
+- Compressed server-to-client galaxy snapshots.
+- Live campaign clock, planet, influence, faction, and alliance display.
+- Player command `convergence_galaxy`.
 
 ### Changed
 
-- Addon version increased to `0.2.3`.
-- Database schema increased to version `3`.
-- Initial faction test now expects Republic and UNSC as player factions.
+- Addon version increased to `0.3.0`.
+
+## 0.2.3
+
+- Added Alliance and Influence Framework.
 
 ## 0.2.2
 
-- Added data-driven Faction Framework.
+- Added Faction Framework.
 
 ## 0.2.1
 
-- Added deterministic Simulation Engine.
+- Added Simulation Engine.
 
 ## 0.2.0
 
-- Added persistent Galaxy Clock.
+- Added Galaxy Clock.
