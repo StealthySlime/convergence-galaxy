@@ -48,6 +48,10 @@ Config.World = {
 
 Config.Campaign = {
     HistorySnapshotLimit = 250,
+    NewsSnapshotLimit = 100,
+    DailyReportIntervalDays = 1,
+    IntelligenceThreatWarning = 55,
+    IntelligenceThreatCritical = 80,
     NotificationDurationSeconds = 8,
     NotifyPlayersOfFleetArrivals = true,
     NotifyPlayersOfTaskForceTravel = true,

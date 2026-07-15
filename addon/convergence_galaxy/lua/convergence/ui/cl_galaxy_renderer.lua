@@ -1,6 +1,33 @@
 Convergence.UI = Convergence.UI or {}
 
 local Theme = Convergence.UI.Theme
+
+local function getPlanetControlColor(data, planetID)
+    local planet = data.planets and data.planets[planetID]
+
+    if not planet then
+        return nil
+    end
+
+    local influence = planet.influence or {}
+    local friendly =
+        (tonumber(influence.republic) or 0)
+        + (tonumber(influence.unsc) or 0)
+    local enemy =
+        (tonumber(influence.covenant) or 0)
+        + (tonumber(influence.cis) or 0)
+
+    if friendly <= 0 and enemy <= 0 then
+        return Color(120, 130, 145, 42)
+    elseif math.abs(friendly - enemy) <= 10 then
+        return Color(245, 181, 62, 48)
+    elseif friendly > enemy then
+        return Color(65, 145, 225, 48)
+    end
+
+    return Color(210, 70, 85, 48)
+end
+
 local PANEL = {}
 
 local function drawCircleOutline(x, y, radius, color, segments)

@@ -1,7 +1,7 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.10.0"
+Convergence.Version = "0.11.0"
 Convergence.SchemaVersion = 9
 Convergence.Root = "convergence/"
 
@@ -82,6 +82,8 @@ addServer(ROOT .. "campaign/sv_campaign_events.lua")
 addServer(ROOT .. "campaign/sv_deployments.lua")
 addServer(ROOT .. "campaign/sv_history.lua")
 addServer(ROOT .. "campaign/sv_notifications.lua")
+addServer(ROOT .. "campaign/sv_news.lua")
+addServer(ROOT .. "campaign/sv_intelligence.lua")
 addServer(ROOT .. "fleets/sv_fleets.lua")
 addServer(ROOT .. "fleets/sv_orders.lua")
 
@@ -113,6 +115,7 @@ addServer(ROOT .. "commands/sv_ui_commands.lua")
 addServer(ROOT .. "commands/sv_director_commands.lua")
 addServer(ROOT .. "commands/sv_campaign_commands.lua")
 addServer(ROOT .. "commands/sv_history_commands.lua")
+addServer(ROOT .. "commands/sv_living_galaxy_commands.lua")
 
 addClient(ROOT .. "ui/cl_theme.lua")
 addClient(ROOT .. "ui/cl_registry.lua")
@@ -235,6 +238,8 @@ if SERVER then
             })
         else
             Convergence.CampaignNotifications.Initialize()
+            Convergence.GalacticNews.Initialize()
+            Convergence.StrategicIntelligence.Initialize()
         end
     end
 end

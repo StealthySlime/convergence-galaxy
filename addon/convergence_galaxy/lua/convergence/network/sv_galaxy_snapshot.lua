@@ -76,7 +76,14 @@ local function buildSnapshot(ply, requestedMode)
         activeDeployment = Convergence.Deployments.GetActive(),
         campaignHistory = Convergence.CampaignHistory
             and Convergence.CampaignHistory.GetRecent(150)
-            or {}
+            or {},
+        galacticNews = Convergence.GalacticNews
+            and Convergence.GalacticNews.GetRecent(75)
+            or {},
+        strategicIntelligence = mode == MODE_DIRECTOR
+            and Convergence.StrategicIntelligence
+            and Convergence.StrategicIntelligence.GetAll()
+            or nil
     }
 
     for id, planet in pairs(Convergence.PlanetService.GetAll()) do
