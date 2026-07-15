@@ -1,7 +1,7 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.1.1"
+Convergence.Version = "0.1.2"
 Convergence.SchemaVersion = 1
 Convergence.Root = "convergence/"
 
@@ -66,11 +66,12 @@ if not valid then
 end
 
 if SERVER then
-    local databaseReady, errorCode, errorMessage = Convergence.Database.Initialize()
+    local ready, errorCode, errorMessage = Convergence.Database.Initialize()
 
-    if not databaseReady then
-        Convergence.Log.Error("Database", errorMessage, {
-            code = errorCode
+    if not ready then
+        Convergence.Log.Error("Database", "Database initialization failed.", {
+            code = errorCode,
+            error = errorMessage
         })
     end
 end

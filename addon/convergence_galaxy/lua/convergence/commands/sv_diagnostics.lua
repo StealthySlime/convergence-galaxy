@@ -2,31 +2,45 @@ local function canUseDiagnostics(ply)
     return not IsValid(ply) or ply:IsAdmin()
 end
 
+local function statusLabel(value)
+    return value and "PASS" or "FAIL"
+end
+
 concommand.Add("convergence_diagnostics", function(ply)
     if not canUseDiagnostics(ply) then
         return
     end
 
     local DB = Convergence.Database
+    local status = DB.GetStatus()
     local schemaSuccess, schemaOrCode, schemaMessage = DB.GetSchemaVersion()
 
     print("========== Convergence Galaxy Diagnostics ==========")
-    print("Addon version: " .. tostring(Convergence.Version))
-    print("Target schema: " .. tostring(Convergence.SchemaVersion))
-    print("Database adapter: " .. tostring(DB.GetAdapterName()))
-    print("Database ready: " .. tostring(DB.IsReady()))
+    print("Addon version:      " .. tostring(Convergence.Version))
+    print("Target schema:      " .. tostring(Convergence.SchemaVersion))
+    print("Database adapter:   " .. tostring(DB.GetAdapterName()))
+    print("Connection:         " .. statusLabel(status.connection))
+    print("Metadata:           " .. statusLabel(status.metadata))
+    print("Migrations:         " .. statusLabel(status.migrations))
+    print("Planet bootstrap:   " .. statusLabel(status.bootstrap))
+    print("Database ready:     " .. statusLabel(status.ready))
 
     if schemaSuccess then
-        print("Installed schema: " .. tostring(schemaOrCode))
+        print("Installed schema:   " .. tostring(schemaOrCode))
     else
-        print("Installed schema: ERROR " .. tostring(schemaOrCode))
-        print("Schema error: " .. tostring(schemaMessage))
+        print("Installed schema:   ERROR")
+        print("Schema error:       " .. tostring(schemaMessage))
     end
 
-    local planetCount = table.Count(Convergence.GetPlanets())
-    print("Registered planets: " .. planetCount)
+    if status.lastErrorCode then
+        print("Last error code:    " .. tostring(status.lastErrorCode))
+        print("Last error message: " .. tostring(status.lastErrorMessage))
+    end
 
-    for id, definition in SortedPairs(Convergence.GetPlanets()) do
+    local planets = Convergence.GetPlanets()
+    print("Registered planets: " .. table.Count(planets))
+
+    for id, definition in SortedPairs(planets) do
         local state, errorCode, errorMessage = DB.GetPlanetState(id)
 
         if state then
