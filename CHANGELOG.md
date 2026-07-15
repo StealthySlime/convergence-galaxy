@@ -1,28 +1,22 @@
 # Changelog
 
-## 0.8.2 — Stabilization
-
-### Fixed
-
-- Replaced the malformed UI registry introduced during the view-separation
-  update.
-- Prevented `RegisterModule` and `GetModule` load failures.
-- Made SWU's completed selected destination authoritative on hyperspace exit.
-- Prevented local SWU ship coordinates from incorrectly overriding arrival.
-- Pinned the player task-force marker to the authoritative planet after
-  arrival.
-- Kept continuous SWU-coordinate movement while actively in hyperspace.
+## 0.8.3 — SWU GM Teleport and Travel Timing
 
 ### Added
 
-- UI registry validation command.
-- Expanded SWU/World synchronization diagnostics.
-- Stabilization, architecture, and milestone documentation.
+- Detection of SWU GM Ship Position/GOTO teleports.
+- Automatic persistent-world arrival after a GM teleport to a registered planet.
+- Manual SWU position reconciliation command.
+- Distance-scaled cinematic hyperspace-duration profiles.
+- Configurable minimum and maximum hyperspace duration.
+- Travel-profile diagnostics.
 
 ### Changed
 
-- Addon version increased to `0.8.2`.
+- SWU universe coordinates are now preferred for matching registered planets.
+- The SWU visible jump estimate now reflects the practical travel duration.
+- Addon version increased to `0.8.3`.
 
-## 0.8.1
+## 0.8.2
 
-- Added Player/Director view separation and coordinate synchronization.
+- Stabilized UI registration and SWU arrival synchronization.
