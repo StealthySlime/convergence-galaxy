@@ -179,9 +179,18 @@ local function buildSnapshot(ply, requestedMode)
     end
 
     local world = Convergence.World.GetState()
+    local currentPlanetData =
+        snapshot.planets[world.currentPlanetID or ""]
     local shipPos = world.swuShipPos
 
-    if isvector(shipPos) then
+    local taskForceMapX =
+        currentPlanetData and tonumber(currentPlanetData.map.x) or 0.5
+    local taskForceMapY =
+        currentPlanetData and tonumber(currentPlanetData.map.y) or 0.5
+
+    -- During hyperspace, display continuous movement using SWU position.
+    -- Once arrived/stationed, pin the marker to the authoritative planet node.
+    if world.travelStatus == "hyperspace" and isvector(shipPos) then
         local minimumX, maximumX = math.huge, -math.huge
         local minimumY, maximumY = math.huge, -math.huge
 
@@ -194,34 +203,36 @@ local function buildSnapshot(ply, requestedMode)
             end
         end
 
-        local rangeX = math.max(maximumX - minimumX, 0.001)
-        local rangeY = math.max(maximumY - minimumY, 0.001)
+        if minimumX < math.huge and minimumY < math.huge then
+            local rangeX = math.max(maximumX - minimumX, 0.001)
+            local rangeY = math.max(maximumY - minimumY, 0.001)
 
-        snapshot.playerTaskForce = {
-            name = Convergence.Config.World.PlayerTaskForceName,
-            currentPlanetID = world.currentPlanetID,
-            destinationPlanetID = world.destinationPlanetID,
-            travelStatus = world.travelStatus,
-            mapX = math.Clamp((shipPos.x - minimumX) / rangeX, 0, 1),
-            mapY = math.Clamp(1 - ((shipPos.y - minimumY) / rangeY), 0, 1),
-            swuPosition = mode == MODE_DIRECTOR and {
-                x = shipPos.x,
-                y = shipPos.y,
-                z = shipPos.z
-            } or nil
-        }
-    else
-        local current = snapshot.planets[world.currentPlanetID or ""]
-
-        snapshot.playerTaskForce = {
-            name = Convergence.Config.World.PlayerTaskForceName,
-            currentPlanetID = world.currentPlanetID,
-            destinationPlanetID = world.destinationPlanetID,
-            travelStatus = world.travelStatus,
-            mapX = current and current.map.x or 0.5,
-            mapY = current and current.map.y or 0.5
-        }
+            taskForceMapX = math.Clamp(
+                (shipPos.x - minimumX) / rangeX,
+                0,
+                1
+            )
+            taskForceMapY = math.Clamp(
+                1 - ((shipPos.y - minimumY) / rangeY),
+                0,
+                1
+            )
+        end
     end
+
+    snapshot.playerTaskForce = {
+        name = Convergence.Config.World.PlayerTaskForceName,
+        currentPlanetID = world.currentPlanetID,
+        destinationPlanetID = world.destinationPlanetID,
+        travelStatus = world.travelStatus,
+        mapX = taskForceMapX,
+        mapY = taskForceMapY,
+        swuPosition = mode == MODE_DIRECTOR and isvector(shipPos) and {
+            x = shipPos.x,
+            y = shipPos.y,
+            z = shipPos.z
+        } or nil
+    }
 
     if mode == MODE_DIRECTOR then
         snapshot.director = {

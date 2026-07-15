@@ -283,3 +283,23 @@ hook.Add("OnScreenSizeChanged", "Convergence.UI.Resize", function()
         UI.Frame:SetPos(0, 0)
     end
 end)
+
+
+concommand.Add("convergence_ui_registry_client", function()
+    if not Convergence.UI or not Convergence.UI.ValidateRegistry then
+        print("[Convergence] UI registry is unavailable.")
+        return
+    end
+
+    local valid, errors = Convergence.UI.ValidateRegistry()
+
+    print("========== Convergence UI Registry ==========")
+    print("Validation: " .. (valid and "PASS" or "FAIL"))
+    print("Modules:    " .. tostring(table.Count(Convergence.UI.Modules or {})))
+
+    for _, message in ipairs(errors or {}) do
+        print(" - " .. message)
+    end
+
+    print("============================================")
+end)

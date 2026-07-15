@@ -235,6 +235,7 @@ function Adapter:Poll()
     local position = self:GetShipPosition()
     local inHyperspace = self:IsInHyperspace()
     local destinationName = self:GetDestination()
+    local selectedPlanet = self:ResolvePlanet(destinationName)
 
     if isvector(position)
         and (
@@ -251,35 +252,44 @@ function Adapter:Poll()
     end
 
     if inHyperspace ~= self.LastHyperspace then
-        local selectedPlanet = self:ResolvePlanet(destinationName)
+        if inHyperspace then
+            if selectedPlanet then
+                Convergence.World.BeginHyperspace(
+                    selectedPlanet:GetID(),
+                    position
+                )
 
-        if inHyperspace and selectedPlanet then
-            Convergence.World.BeginHyperspace(selectedPlanet:GetID(), position)
+                hook.Run(
+                    "ConvergenceNavigationHyperspaceStarted",
+                    self.ID,
+                    selectedPlanet:GetID()
+                )
+            end
+        else
+            -- SWU's selected destination is authoritative after a completed
+            -- jump. GetShipPos may use a local/visual coordinate system that
+            -- does not exactly match injected universe coordinates.
+            local worldDestination =
+                Convergence.World.GetState().destinationPlanetID
 
-            hook.Run(
-                "ConvergenceNavigationHyperspaceStarted",
-                self.ID,
-                selectedPlanet:GetID()
-            )
-        elseif not inHyperspace then
-            -- The ship's actual SWU coordinate is authoritative on arrival.
-            -- Fall back to the selected destination only when position
-            -- reconciliation cannot identify a nearby mapped planet.
-            if not self:ReconcileArrival(position) and selectedPlanet then
-                Convergence.World.Arrive(selectedPlanet:GetID(), position)
+            local arrivalPlanet = selectedPlanet
+                or Convergence.PlanetService.Get(worldDestination)
+
+            if arrivalPlanet then
+                Convergence.World.Arrive(
+                    arrivalPlanet:GetID(),
+                    position
+                )
 
                 hook.Run(
                     "ConvergenceNavigationHyperspaceEnded",
                     self.ID,
-                    selectedPlanet:GetID()
+                    arrivalPlanet:GetID()
                 )
             end
         end
 
         self.LastHyperspace = inHyperspace
-    elseif not inHyperspace then
-        -- Repairs stale states after reloads or missed SWU state transitions.
-        self:ReconcileArrival(position)
     end
 end
 

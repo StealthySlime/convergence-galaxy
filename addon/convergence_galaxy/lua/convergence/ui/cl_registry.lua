@@ -16,10 +16,6 @@ function UI.RegisterModule(definition)
         return false, "Module requires a valid ID."
     end
 
-    if UI.Modules[id] then
-        return false, "Module is already registered: " .. id
-    end
-
     if not isfunction(definition.create) then
         return false, "Module requires a create function."
     end
@@ -31,12 +27,28 @@ function UI.RegisterModule(definition)
     definition.adminOnly = definition.adminOnly == true
     definition.directorOnly = definition.directorOnly == true
 
+    -- Allow safe client reloads without producing duplicate-registration errors.
     UI.Modules[id] = definition
-    UI.ModuleOrder[#UI.ModuleOrder + 1] = id
+
+    local existsInOrder = false
+
+    for _, existingID in ipairs(UI.ModuleOrder) do
+        if existingID == id then
+            existsInOrder = true
+            break
+        end
+    end
+
+    if not existsInOrder then
+        UI.ModuleOrder[#UI.ModuleOrder + 1] = id
+    end
 
     table.sort(UI.ModuleOrder, function(leftID, rightID)
         local left = UI.Modules[leftID]
         local right = UI.Modules[rightID]
+
+        if not left then return false end
+        if not right then return true end
 
         if left.order == right.order then
             return left.name < right.name
@@ -59,24 +71,48 @@ function UI.GetModulesForPlayer(ply, mode)
 
     for _, id in ipairs(UI.ModuleOrder) do
         local module = UI.Modules[id]
-        local allowed = true
 
-        if module.adminOnly and not (IsValid(ply) and ply:IsAdmin()) then
-            allowed = false
-        end
+        if module then
+            local allowed = true
 
-        if module.directorOnly and mode ~= "director" then
-            allowed = false
-        end
+            if module.adminOnly
+                and not (IsValid(ply) and ply:IsAdmin()) then
+                allowed = false
+            end
 
-        if allowed then
-            result[#result + 1] = module
+            if module.directorOnly and mode ~= "director" then
+                allowed = false
+            end
+
+            if allowed then
+                result[#result + 1] = module
+            end
         end
     end
 
     return result
 end
+
+function UI.ValidateRegistry()
+    local errors = {}
+
+    if not isfunction(UI.RegisterModule) then
+        errors[#errors + 1] = "RegisterModule is missing."
     end
 
-    return result
+    if not isfunction(UI.GetModule) then
+        errors[#errors + 1] = "GetModule is missing."
+    end
+
+    if not isfunction(UI.GetModulesForPlayer) then
+        errors[#errors + 1] = "GetModulesForPlayer is missing."
+    end
+
+    for _, id in ipairs(UI.ModuleOrder) do
+        if not UI.Modules[id] then
+            errors[#errors + 1] = "Module order references missing module: " .. id
+        end
+    end
+
+    return #errors == 0, errors
 end
