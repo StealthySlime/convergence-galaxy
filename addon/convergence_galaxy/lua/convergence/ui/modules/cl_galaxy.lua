@@ -49,6 +49,10 @@ Convergence.UI.RegisterModule({
         inspector:Dock(RIGHT)
         inspector:SetWide(math.max(ScrW() * 0.31, 420))
 
+        if not vgui.GetControlTable("ConvergenceGalaxyRenderer") then
+            include("convergence/ui/cl_galaxy_renderer.lua")
+        end
+
         local renderer = vgui.Create("ConvergenceGalaxyRenderer", mapCard)
         renderer:Dock(FILL)
         renderer:SetGalaxyData(data)
