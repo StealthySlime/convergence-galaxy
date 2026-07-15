@@ -1,8 +1,8 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.8.3"
-Convergence.SchemaVersion = 6
+Convergence.Version = "0.9.0"
+Convergence.SchemaVersion = 8
 Convergence.Root = "convergence/"
 
 local ROOT = Convergence.Root
@@ -72,11 +72,14 @@ addServer(ROOT .. "simulation/sv_clock.lua")
 addServer(ROOT .. "simulation/processors/sv_planet_processor.lua")
 addServer(ROOT .. "simulation/processors/sv_fleet_processor.lua")
 addServer(ROOT .. "simulation/processors/sv_fleet_order_processor.lua")
+addServer(ROOT .. "simulation/processors/sv_campaign_processor.lua")
 
 addServer(ROOT .. "alliances/sv_influence.lua")
 addServer(ROOT .. "planets/sv_planet_service.lua")
 addServer(ROOT .. "stability/sv_stability.lua")
 addServer(ROOT .. "world/sv_world.lua")
+addServer(ROOT .. "campaign/sv_campaign_events.lua")
+addServer(ROOT .. "campaign/sv_deployments.lua")
 addServer(ROOT .. "fleets/sv_fleets.lua")
 addServer(ROOT .. "fleets/sv_orders.lua")
 
@@ -102,6 +105,7 @@ addServer(ROOT .. "commands/sv_world_commands.lua")
 addServer(ROOT .. "commands/sv_navigation_commands.lua")
 addServer(ROOT .. "commands/sv_ui_commands.lua")
 addServer(ROOT .. "commands/sv_director_commands.lua")
+addServer(ROOT .. "commands/sv_campaign_commands.lua")
 
 addClient(ROOT .. "ui/cl_theme.lua")
 addClient(ROOT .. "ui/cl_registry.lua")
@@ -169,6 +173,26 @@ if SERVER then
             Convergence.Log.Error("World", "World service initialization failed.", {
                 code = worldCode,
                 error = worldMessage
+            })
+        end
+
+        local campaignReady, campaignCode, campaignMessage =
+            Convergence.CampaignEvents.Initialize()
+
+        if not campaignReady then
+            Convergence.Log.Error("Campaign", "Campaign event service initialization failed.", {
+                code = campaignCode,
+                error = campaignMessage
+            })
+        end
+
+        local deploymentsReady, deploymentsCode, deploymentsMessage =
+            Convergence.Deployments.Initialize()
+
+        if not deploymentsReady then
+            Convergence.Log.Error("Deployments", "Deployment service initialization failed.", {
+                code = deploymentsCode,
+                error = deploymentsMessage
             })
         end
 

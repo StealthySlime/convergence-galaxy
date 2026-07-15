@@ -46,6 +46,18 @@ Config.World = {
     }
 }
 
+Config.Campaign = {
+    AIBattleMinimumSeconds = 3600,
+    AIBattleMaximumSeconds = 7200,
+    MajorBattleMaximumSeconds = 10800,
+    MaximumGMExtensionSeconds = 14400,
+    DefaultVictoryStability = 10,
+    DefaultDefeatStability = -15,
+    DefaultInfluenceChange = 15,
+    SingleActiveDeployment = true,
+    ServerID = "primary"
+}
+
 Config.Galaxy = {
     MinZoom = 0.65,
     MaxZoom = 2.5,

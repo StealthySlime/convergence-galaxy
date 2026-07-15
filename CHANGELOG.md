@@ -1,22 +1,25 @@
 # Changelog
 
-## 0.8.3 — SWU GM Teleport and Travel Timing
+## 0.9.0 — Campaign Core
 
 ### Added
 
-- Detection of SWU GM Ship Position/GOTO teleports.
-- Automatic persistent-world arrival after a GM teleport to a registered planet.
-- Manual SWU position reconciliation command.
-- Distance-scaled cinematic hyperspace-duration profiles.
-- Configurable minimum and maximum hyperspace duration.
-- Travel-profile diagnostics.
+- Persistent campaign-event service.
+- Persistent single-server deployment service.
+- AI battle timers with one-to-two-hour defaults.
+- Major battle and GM extension limits.
+- Independent AI progression during a player deployment.
+- Player-controlled event hold for GM resolution.
+- Victory, draw, and defeat consequence application.
+- Campaign Operations UI page.
+- Campaign commands and automated tests.
+- Database migrations 7 and 8.
 
 ### Changed
 
-- SWU universe coordinates are now preferred for matching registered planets.
-- The SWU visible jump estimate now reflects the practical travel duration.
-- Addon version increased to `0.8.3`.
+- Addon version increased to `0.9.0`.
+- Database schema increased to `8`.
 
-## 0.8.2
+## 0.8.3
 
-- Stabilized UI registration and SWU arrival synchronization.
+- Added SWU GM teleport synchronization and practical travel timing.

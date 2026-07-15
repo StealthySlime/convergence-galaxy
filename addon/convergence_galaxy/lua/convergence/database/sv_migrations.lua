@@ -160,3 +160,63 @@ DB.RegisterMigration(6, "Persistent world and player task force state", function
         )
     })
 end)
+
+
+DB.RegisterMigration(7, "Persistent campaign events", function(database)
+    return database.Transaction({
+        [[
+            CREATE TABLE IF NOT EXISTS convergence_campaign_events (
+                event_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                planet_id TEXT NOT NULL,
+                region_id TEXT,
+                friendly_factions_json TEXT NOT NULL DEFAULT '[]',
+                enemy_factions_json TEXT NOT NULL DEFAULT '[]',
+                briefing TEXT NOT NULL DEFAULT '',
+                difficulty TEXT NOT NULL DEFAULT 'standard',
+                priority TEXT NOT NULL DEFAULT 'normal',
+                status TEXT NOT NULL DEFAULT 'pending',
+                player_controlled INTEGER NOT NULL DEFAULT 0,
+                ai_progress_active INTEGER NOT NULL DEFAULT 1,
+                awaiting_gm_resolution INTEGER NOT NULL DEFAULT 0,
+                auto_resolve_at INTEGER,
+                resolution_json TEXT NOT NULL DEFAULT '{}',
+                effects_json TEXT NOT NULL DEFAULT '{}',
+                created_at INTEGER NOT NULL,
+                started_at INTEGER,
+                resolved_at INTEGER,
+                updated_at INTEGER NOT NULL
+            )
+        ]],
+        [[
+            CREATE INDEX IF NOT EXISTS convergence_campaign_events_status
+            ON convergence_campaign_events (status)
+        ]],
+        [[
+            CREATE INDEX IF NOT EXISTS convergence_campaign_events_planet
+            ON convergence_campaign_events (planet_id)
+        ]]
+    })
+end)
+
+DB.RegisterMigration(8, "Single-server campaign deployments", function(database)
+    return database.Transaction({
+        [[
+            CREATE TABLE IF NOT EXISTS convergence_deployments (
+                deployment_id TEXT PRIMARY KEY,
+                server_id TEXT NOT NULL,
+                event_id TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'active',
+                locked_snapshot_json TEXT NOT NULL DEFAULT '{}',
+                started_at INTEGER NOT NULL,
+                ended_at INTEGER,
+                updated_at INTEGER NOT NULL
+            )
+        ]],
+        [[
+            CREATE INDEX IF NOT EXISTS convergence_deployments_server_status
+            ON convergence_deployments (server_id, status)
+        ]]
+    })
+end)

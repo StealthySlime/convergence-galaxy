@@ -71,7 +71,9 @@ local function buildSnapshot(ply, requestedMode)
         factions = {},
         alliances = {},
         fleets = {},
-        world = Convergence.World.GetPublicState()
+        world = Convergence.World.GetPublicState(),
+        campaignEvents = {},
+        activeDeployment = Convergence.Deployments.GetActive()
     }
 
     for id, planet in pairs(Convergence.PlanetService.GetAll()) do
@@ -174,6 +176,38 @@ local function buildSnapshot(ply, requestedMode)
                     or nil,
                 intelligenceLevel = intelligenceLevel,
                 playerVisible = true
+            }
+        end
+    end
+
+    for id, event in pairs(Convergence.CampaignEvents.GetAll()) do
+        if event.status ~= "cancelled"
+            and (
+                mode == MODE_DIRECTOR
+                or event.status == "available"
+                or event.status == "active"
+                or event.status == "awaiting_gm_resolution"
+            ) then
+            snapshot.campaignEvents[id] = {
+                id = event.id,
+                name = event.name,
+                eventType = event.eventType,
+                planetID = event.planetID,
+                regionID = mode == MODE_DIRECTOR and event.regionID or nil,
+                friendlyFactions = table.Copy(event.friendlyFactions),
+                enemyFactions = mode == MODE_DIRECTOR
+                    and table.Copy(event.enemyFactions)
+                    or {},
+                briefing = event.briefing,
+                difficulty = event.difficulty,
+                priority = event.priority,
+                status = event.status,
+                playerControlled = event.playerControlled,
+                awaitingGMResolution = event.awaitingGMResolution,
+                autoResolveAt = event.autoResolveAt,
+                secondsRemaining = event.autoResolveAt
+                    and math.max(event.autoResolveAt - os.time(), 0)
+                    or nil
             }
         end
     end
