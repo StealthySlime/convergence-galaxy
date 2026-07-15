@@ -1,5 +1,70 @@
 # Changelog
 
+## 0.13.0 — Living Galaxy AI
+
+### Added
+
+- Explainable Threat Engine 2.0.
+- Autonomous friendly reinforcement decisions.
+- Autonomous hostile invasion decisions.
+- AI-generated campaign operations.
+- AI operation cooldown and duplication safeguards.
+- Galactic AI Director monitor.
+- AI decisions in Galactic News and Campaign History.
+- Faction AI status, toggle, force-think, and test commands.
+
+### Changed
+
+- Strategic threat now includes neighboring hostile pressure, strategic value,
+  operation severity, and fleet-strength advantage.
+- Addon version increased to `0.13.0`.
+
+## 0.12.0 — Core Service Lifecycle
+
+### Added
+
+- Deterministic core-service bootstrap.
+- Registration for legacy Planet, Faction, Influence, Stability, Fleet,
+  Simulation, Clock, Alliance, and Fleet Order services.
+- Core dependency validation before Living Galaxy initialization.
+- Lifecycle status, test, and repair commands.
+- Lifecycle-ready event and hook.
+- Additional Service Facade aliases.
+
+### Fixed
+
+- Service Facade reporting older working systems as unavailable.
+- Strategic Intelligence receiving no planets from the facade.
+- Living Galaxy test failing `intelligencePlanets`.
+- Highest Threat remaining empty because Intelligence had no registered
+  Planet Service.
+
+### Changed
+
+- Intelligence now waits for the core lifecycle.
+- Addon version increased to `0.12.0`.
+
+## 0.11.1 — Service Cleanup and Intelligence Polish
+
+### Fixed
+
+- Strategic Intelligence calling a missing `GetEnemyIDs` function.
+- Intelligence directly depending on multiple subsystem internals.
+
+### Added
+
+- Central service facade.
+- Friendly, enemy, and neutral faction APIs.
+- Friendly and enemy influence aggregation.
+- Cached intelligence refresh.
+- Fleet-strength contribution to threat scoring.
+- Highest-threat summary on the Director dashboard.
+- `convergence_service_status` diagnostics.
+
+### Changed
+
+- Addon version increased to `0.11.1`.
+
 ## 0.11.0 — Living Galaxy
 
 ### Added
