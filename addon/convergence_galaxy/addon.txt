@@ -1,0 +1,10 @@
+{
+    "title"       "Convergence Galaxy",
+    "type"        "servercontent",
+    "tags"        "roleplay,starwars",
+    "ignore"      {
+        "*.psd",
+        "*.vcproj",
+        "*.svn*"
+    }
+}
