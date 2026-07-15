@@ -4,20 +4,24 @@
 
 ### Added
 
-- Persistent Galaxy Clock.
-- Campaign day, hour, minute, and tick tracking.
-- Pause, resume, time-scale, set-time, and advance-time controls.
-- Periodic clock persistence and restart recovery.
-- `clock.ready`, `clock.started`, `clock.stopped`, `clock.tick`,
-  `clock.paused.changed`, `clock.scale.changed`, `clock.time.changed`, and
-  `clock.time.advanced` events.
-- Galaxy Clock diagnostics and automated test command.
-- Schema migration 2 for `convergence_clock`.
+- Deterministic Simulation Engine.
+- Ordered simulation processor registry.
+- Processor priorities and configurable execution cadence.
+- Protected processor execution and performance-budget warnings.
+- Queued simulation actions.
+- Simulation tick history and timing metrics.
+- Start, stop, manual-step, status, queue-test, and automated-test commands.
+- Initial Planet State Processor.
+- Simulation events for lifecycle, ticks, processors, and queued actions.
 
 ### Changed
 
-- Addon version increased to `0.2.0`.
-- Database schema increased to version `2`.
+- Addon version increased to `0.2.1`.
+- Galaxy Clock ticks now drive Simulation Engine ticks.
+
+## 0.2.0
+
+- Added persistent Galaxy Clock and schema migration 2.
 
 ## 0.1.4
 

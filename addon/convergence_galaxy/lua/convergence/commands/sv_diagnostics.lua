@@ -15,6 +15,7 @@ concommand.Add("convergence_diagnostics", function(ply)
     local status = DB.GetStatus()
     local schemaSuccess, schemaOrCode, schemaMessage = DB.GetSchemaVersion()
     local planetServiceReady = Convergence.PlanetService.IsReady()
+    local simulationReady = Convergence.Simulation.IsReady()
     local clockReady = Convergence.Clock.IsReady()
 
     print("========== Convergence Galaxy Diagnostics ==========")
@@ -28,6 +29,16 @@ concommand.Add("convergence_diagnostics", function(ply)
     print("Database ready:     " .. statusLabel(status.ready))
     print("Planet service:     " .. statusLabel(planetServiceReady))
     print("Event bus:          PASS")
+    print("Simulation Engine:  " .. statusLabel(simulationReady))
+    print("Simulation running: " .. statusLabel(
+        simulationReady and Convergence.Simulation.IsRunning()
+    ))
+    print("Simulation tick:    " .. tostring(
+        simulationReady and Convergence.Simulation.GetCurrentTick() or 0
+    ))
+    print("Simulation queue:   " .. tostring(
+        simulationReady and Convergence.Simulation.GetQueueLength() or 0
+    ))
     print("Galaxy Clock:       " .. statusLabel(clockReady))
     print("Clock running:      " .. statusLabel(
         clockReady and Convergence.Clock.IsRunning()

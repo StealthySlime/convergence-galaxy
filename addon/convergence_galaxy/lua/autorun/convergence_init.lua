@@ -1,7 +1,7 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.2.0"
+Convergence.Version = "0.2.1"
 Convergence.SchemaVersion = 2
 Convergence.Root = "convergence/"
 
@@ -44,7 +44,9 @@ addServer(ROOT .. "database/sv_database.lua")
 addServer(ROOT .. "database/sv_migrations.lua")
 
 -- Galaxy simulation foundation
+addServer(ROOT .. "simulation/sv_engine.lua")
 addServer(ROOT .. "simulation/sv_clock.lua")
+addServer(ROOT .. "simulation/processors/sv_planet_processor.lua")
 
 -- Planet and campaign services
 addServer(ROOT .. "planets/sv_planet_service.lua")
@@ -55,6 +57,7 @@ addServer(ROOT .. "commands/sv_diagnostics.lua")
 addServer(ROOT .. "commands/sv_planet_tests.lua")
 addServer(ROOT .. "commands/sv_event_tests.lua")
 addServer(ROOT .. "commands/sv_clock_commands.lua")
+addServer(ROOT .. "commands/sv_simulation_commands.lua")
 
 -- Optional integrations
 addServer(ROOT .. "integrations/sam/sv_sam.lua")
@@ -89,6 +92,16 @@ if SERVER then
             Convergence.Log.Error("Planets", "Planet service initialization failed.", {
                 code = planetCode,
                 error = planetMessage
+            })
+        end
+
+        local simulationReady, simulationCode, simulationMessage =
+            Convergence.Simulation.Initialize()
+
+        if not simulationReady then
+            Convergence.Log.Error("Simulation", "Simulation Engine initialization failed.", {
+                code = simulationCode,
+                error = simulationMessage
             })
         end
 

@@ -16,6 +16,13 @@ Config.Clock = {
     SaveEveryTicks = 12
 }
 
+Config.Simulation = {
+    MaxQueuedActionsPerTick = 100,
+    MaxProcessorMilliseconds = 25,
+    HistoryLimit = 100,
+    StopOnProcessorError = false
+}
+
 Config.StabilityStates = {
     {
         id = "collapse",
@@ -96,6 +103,20 @@ function Convergence.ValidateConfig()
 
         if not isnumber(Config.Clock.SaveEveryTicks) or Config.Clock.SaveEveryTicks < 1 then
             errors[#errors + 1] = "Clock SaveEveryTicks must be at least 1."
+        end
+    end
+
+    if not istable(Config.Simulation) then
+        errors[#errors + 1] = "Simulation configuration must be a table."
+    else
+        if not isnumber(Config.Simulation.MaxQueuedActionsPerTick)
+            or Config.Simulation.MaxQueuedActionsPerTick < 1 then
+            errors[#errors + 1] = "Simulation MaxQueuedActionsPerTick must be at least 1."
+        end
+
+        if not isnumber(Config.Simulation.MaxProcessorMilliseconds)
+            or Config.Simulation.MaxProcessorMilliseconds < 1 then
+            errors[#errors + 1] = "Simulation MaxProcessorMilliseconds must be at least 1."
         end
     end
 
