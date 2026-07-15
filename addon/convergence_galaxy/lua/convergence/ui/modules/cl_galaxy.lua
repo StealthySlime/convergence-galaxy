@@ -155,6 +155,98 @@ Convergence.UI.RegisterModule({
             )
         end
 
+        local planetOperations = {}
+
+        for id, event in pairs(data.campaignEvents or {}) do
+            if event.planetID == selectedID
+                and event.status ~= "resolved"
+                and event.status ~= "cancelled" then
+                planetOperations[#planetOperations + 1] = {
+                    id = id,
+                    event = event
+                }
+            end
+        end
+
+        table.sort(planetOperations, function(left, right)
+            local leftPriority = tostring(left.event.priority or "normal")
+            local rightPriority = tostring(right.event.priority or "normal")
+            local weights = {
+                critical = 4,
+                high = 3,
+                normal = 2,
+                low = 1
+            }
+
+            return (weights[leftPriority] or 0)
+                > (weights[rightPriority] or 0)
+        end)
+
+        local operationsTitle = Components.CreateLabel(
+            inspector,
+            "Available Operations",
+            "Convergence.UI.Nav",
+            Theme.GetColor("accent")
+        )
+        operationsTitle:Dock(TOP)
+        operationsTitle:DockMargin(0, 16, 0, 8)
+
+        if #planetOperations == 0 then
+            local empty = Components.CreateLabel(
+                inspector,
+                "No unresolved operations at this planet.",
+                "Convergence.UI.Body",
+                Theme.GetColor("textMuted")
+            )
+            empty:Dock(TOP)
+        else
+            for _, record in ipairs(planetOperations) do
+                local event = record.event
+                local operation = vgui.Create("DPanel", inspector)
+                operation:Dock(TOP)
+                operation:SetTall(72)
+                operation:DockMargin(0, 0, 0, 8)
+                operation:DockPadding(8, 6, 8, 6)
+
+                operation.Paint = function(self, width, height)
+                    draw.RoundedBox(
+                        4,
+                        0,
+                        0,
+                        width,
+                        height,
+                        Color(4, 20, 34, 225)
+                    )
+                end
+
+                local name = Components.CreateLabel(
+                    operation,
+                    event.name,
+                    "Convergence.UI.Body",
+                    Theme.GetColor("text")
+                )
+                name:Dock(TOP)
+
+                local details = Components.CreateLabel(
+                    operation,
+                    string.format(
+                        "%s | %s | %s",
+                        string.upper(event.status or "available"),
+                        string.upper(event.difficulty or "standard"),
+                        event.secondsRemaining
+                            and (
+                                math.ceil(event.secondsRemaining / 60)
+                                .. "m remaining"
+                            )
+                            or "Awaiting GM"
+                    ),
+                    "Convergence.UI.Small",
+                    Theme.GetColor("warning")
+                )
+                details:Dock(TOP)
+            end
+        end
+
         return root
     end
 })

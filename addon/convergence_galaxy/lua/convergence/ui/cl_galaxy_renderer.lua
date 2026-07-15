@@ -401,6 +401,48 @@ function PANEL:Paint(width, height)
             TEXT_ALIGN_CENTER,
             TEXT_ALIGN_TOP
         )
+
+        local operationCount = 0
+        local criticalOperation = false
+
+        for _, event in pairs(data.campaignEvents or {}) do
+            if event.planetID == id
+                and event.status ~= "resolved"
+                and event.status ~= "cancelled" then
+                operationCount = operationCount + 1
+
+                if event.priority == "critical" then
+                    criticalOperation = true
+                end
+            end
+        end
+
+        if operationCount > 0 then
+            local badgeColor = criticalOperation
+                and Theme.GetColor("danger")
+                or Theme.GetColor("warning")
+            local badgeX = position.x + nodeRadius + 12
+            local badgeY = position.y - nodeRadius - 10
+
+            draw.RoundedBox(
+                12,
+                badgeX - 12,
+                badgeY - 12,
+                24,
+                24,
+                Color(badgeColor.r, badgeColor.g, badgeColor.b, 235)
+            )
+
+            draw.SimpleText(
+                tostring(operationCount),
+                "Convergence.UI.Small",
+                badgeX,
+                badgeY,
+                Color(8, 18, 28),
+                TEXT_ALIGN_CENTER,
+                TEXT_ALIGN_CENTER
+            )
+        end
     end
 
 

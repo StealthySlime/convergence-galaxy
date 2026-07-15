@@ -12,7 +12,14 @@ Convergence.UI.RegisterModule({
         local director = data.director or {}
         local world = data.world or {}
         local deployment = data.activeDeployment
-        local events = data.campaignEvents or {}
+        local allEvents = data.campaignEvents or {}
+        local events = {}
+
+        for id, event in pairs(allEvents) do
+            if event.status ~= "resolved" and event.status ~= "cancelled" then
+                events[id] = event
+            end
+        end
 
         local root = vgui.Create("DScrollPanel", parent)
         root:Dock(FILL)

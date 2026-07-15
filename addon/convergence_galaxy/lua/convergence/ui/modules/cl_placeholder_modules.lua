@@ -6,18 +6,12 @@ local placeholders = {
         description = "Faction and alliance research projects will appear here."
     },
     {
-        id = "events",
-        name = "Events",
-        order = 70,
-        description = "Campaign events and active convergence incidents will appear here."
-    },
-    {
         id = "administration",
         name = "GM Tools",
         order = 1000,
         adminOnly = true,
         directorOnly = true,
-        description = "Planet editing, influence controls, events, and campaign administration will appear here."
+        description = "Planet editing, influence controls, and advanced campaign administration will appear here."
     }
 }
 

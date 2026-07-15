@@ -7,21 +7,27 @@ Convergence.UI.RegisterModule({
         local Components = Convergence.UI.Components
         local Theme = Convergence.UI.Theme
         local data = Convergence.GalaxyData or {}
-        local events = data.campaignEvents or {}
+        local visibleEvents = {}
+
+        for id, event in pairs(data.campaignEvents or {}) do
+            if event.status ~= "resolved" and event.status ~= "cancelled" then
+                visibleEvents[id] = event
+            end
+        end
 
         local scroll = vgui.Create("DScrollPanel", parent)
         scroll:Dock(FILL)
 
-        if table.IsEmpty(events) then
+        if table.IsEmpty(visibleEvents) then
             Components.CreateEmptyState(
                 scroll,
                 "No Active Operations",
-                "Galactic Command has no operations available at this time."
+                "Galactic Command has no unresolved operations at this time."
             )
             return scroll
         end
 
-        for id, event in SortedPairs(events) do
+        for id, event in SortedPairs(visibleEvents) do
             local planet = (data.planets or {})[event.planetID]
             local planetName = planet and planet.state and planet.state.name
                 or event.planetID

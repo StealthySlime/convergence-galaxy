@@ -205,6 +205,10 @@ local function buildSnapshot(ply, requestedMode)
                 playerControlled = event.playerControlled,
                 awaitingGMResolution = event.awaitingGMResolution,
                 autoResolveAt = event.autoResolveAt,
+                resolvedAt = event.resolvedAt,
+                resolution = event.status == "resolved"
+                    and table.Copy(event.resolution or {})
+                    or nil,
                 secondsRemaining = event.autoResolveAt
                     and math.max(event.autoResolveAt - os.time(), 0)
                     or nil
