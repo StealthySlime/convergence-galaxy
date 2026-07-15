@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.11.0 — Living Galaxy
+
+### Added
+
+- Galactic News Network service and UI.
+- Automatic operation, battle, and fleet news.
+- Automatic daily campaign reports.
+- Director-only strategic intelligence assessments.
+- Threat scoring and recommended responses.
+- Strategic-control halos on galaxy-map planets.
+- Living Galaxy diagnostics and tests.
+
+### Changed
+
+- Addon version increased to `0.11.0`.
+
+## 0.10.0 — Campaign History and Notifications
+
+### Added
+
+- Persistent campaign-history database and service.
+- Campaign History UI tab with category filters.
+- Automatic history entries for operations, deployments, fleets, travel, and
+  encounters.
+- Queued Galactic Command HUD notifications.
+- History and notification diagnostics and tests.
+- Database migration 9.
+
+### Changed
+
+- Addon version increased to `0.10.0`.
+- Database schema increased to `9`.
+
 ## 0.9.11 — SWU Navigation Reset
 
 ### Fixed
