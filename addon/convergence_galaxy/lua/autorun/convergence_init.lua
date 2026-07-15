@@ -1,7 +1,7 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.1.3"
+Convergence.Version = "0.1.4"
 Convergence.SchemaVersion = 1
 Convergence.Root = "convergence/"
 
@@ -35,6 +35,7 @@ addShared(ROOT .. "core/sh_constants.lua")
 addShared(ROOT .. "core/sh_util.lua")
 addShared(ROOT .. "core/sh_log.lua")
 addShared(ROOT .. "core/sh_modules.lua")
+addShared(ROOT .. "core/sh_events.lua")
 addShared(ROOT .. "core/sh_config.lua")
 addShared(ROOT .. "core/sh_planets.lua")
 
@@ -49,6 +50,7 @@ addServer(ROOT .. "network/sv_network.lua")
 addServer(ROOT .. "commands/sv_commands.lua")
 addServer(ROOT .. "commands/sv_diagnostics.lua")
 addServer(ROOT .. "commands/sv_planet_tests.lua")
+addServer(ROOT .. "commands/sv_event_tests.lua")
 
 -- Optional integrations
 addServer(ROOT .. "integrations/sam/sv_sam.lua")
@@ -90,7 +92,13 @@ end
 
 Convergence.Modules.InitializeAll()
 
+Convergence.Events.Publish("core.loaded", {
+    version = Convergence.Version,
+    realm = SERVER and "server" or "client"
+})
+
 hook.Run("ConvergenceLoaded", Convergence.Version)
+
 Convergence.Log.Info("Core", string.format(
     "%s %s loaded in the %s realm.",
     Convergence.Name,

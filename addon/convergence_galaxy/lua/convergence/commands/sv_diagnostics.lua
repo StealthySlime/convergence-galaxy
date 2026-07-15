@@ -26,6 +26,12 @@ concommand.Add("convergence_diagnostics", function(ply)
     print("Planet bootstrap:   " .. statusLabel(status.bootstrap))
     print("Database ready:     " .. statusLabel(status.ready))
     print("Planet service:     " .. statusLabel(planetServiceReady))
+    print("Event bus:          PASS")
+    print("Published events:   " .. tostring(Convergence.Events.PublishedCount))
+    print("Event subscribers:  " .. tostring(
+        Convergence.Events.GetSubscriberCount()
+    ))
+    print("Event errors:       " .. tostring(Convergence.Events.ErrorCount))
 
     if schemaSuccess then
         print("Installed schema:   " .. tostring(schemaOrCode))

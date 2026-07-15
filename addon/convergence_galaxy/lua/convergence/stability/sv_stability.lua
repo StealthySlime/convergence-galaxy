@@ -61,6 +61,11 @@ function Stability.SetLocked(planetID, locked, context)
         os.time()
     )
 
+    Convergence.Events.Publish("planet.stability.lock.changed", {
+        planetID = planet:GetID(),
+        locked = locked
+    }, context)
+
     hook.Run("ConvergencePlanetLockChanged", planet:GetID(), locked, context)
 
     if Convergence.Network then
@@ -143,6 +148,15 @@ function Stability.Set(planetID, newValue, context)
         planet:IsStabilityLocked(),
         updatedAt
     )
+
+    Convergence.Events.Publish("planet.stability.changed", {
+        planetID = planet:GetID(),
+        previousValue = previousValue,
+        newValue = newValue,
+        delta = newValue - previousValue,
+        state = planet:GetStabilityState(),
+        transaction = table.Copy(entry)
+    }, context)
 
     hook.Run(
         "ConvergenceStabilityChanged",
