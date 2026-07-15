@@ -1,22 +1,28 @@
 # Changelog
 
-## Unreleased
+## 0.8.2 — Stabilization
 
 ### Fixed
 
-- Director-only pages leaking into the Player Command map for admins.
-- Player view retaining the Director page after switching modes.
-- SWU and Convergence using different coordinate sources.
-- Arrival resolving from a stale destination instead of the ship's actual
-  universe position.
-- Persistent world state remaining stuck in hyperspace after a missed state
-  transition.
+- Replaced the malformed UI registry introduced during the view-separation
+  update.
+- Prevented `RegisterModule` and `GetModule` load failures.
+- Made SWU's completed selected destination authoritative on hyperspace exit.
+- Prevented local SWU ship coordinates from incorrectly overriding arrival.
+- Pinned the player task-force marker to the authoritative planet after
+  arrival.
+- Kept continuous SWU-coordinate movement while actively in hyperspace.
+
+### Added
+
+- UI registry validation command.
+- Expanded SWU/World synchronization diagnostics.
+- Stabilization, architecture, and milestone documentation.
 
 ### Changed
 
-- Addon version increased to `0.8.1`.
-- `sh_planet_mapping.lua` is now the sole source of SWU universe coordinates.
+- Addon version increased to `0.8.2`.
 
-## 0.8.0
+## 0.8.1
 
-- Added separate Player Command and GM Director maps.
+- Added Player/Director view separation and coordinate synchronization.

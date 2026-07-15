@@ -1,40 +1,58 @@
-# Development Roadmap
+# Convergence Roadmap
 
-## v0.1.0 — Persistent Galaxy Core
+## Milestone A — Foundation
 
-- Loader
-- Planet registry
-- SQLite persistence
-- Stability transactions
-- Network sync
-- Development commands
+Complete:
 
-## v0.2.0 — SAM Administration
+- database and migrations
+- galaxy clock and simulation engine
+- planets, stability, and influence
+- factions and alliances
+- fleets and fleet orders
+- SWU navigation adapter
+- persistent world state
+- Player Command and GM Director maps
 
-- SAM privileges
-- Stability commands
-- History command
-- Planet lock command
-- GM menu launcher
+## Milestone B — Stabilization
 
-## v0.3.0 — SWU Star Map
+Current release: `0.8.2`
 
-- Planet ID adapter
-- Stability overlays
-- Planet details panel
-- GM interaction mode
+- deterministic UI loading
+- Player/Director permission separation
+- SWU-to-world synchronization
+- authoritative arrival handling
+- task-force coordinate synchronization
+- expanded diagnostics
+- restart and save/load validation
 
-## v0.4.0 — Events and Missions
+## Milestone C — Campaign Framework
 
-- Event instances
-- Mission instances
-- Objective tracking
-- Restart recovery
+Planned:
 
-## v0.5.0 — Factions and Campaign State
+- GM-created campaign events
+- event objectives
+- playable encounter activation
+- GM win/loss resolution
+- persistent strategic consequences
+- battle-resolution templates
+- campaign alerts
 
-- Ownership
-- Fleet presence
-- Resources
-- Supply routes
-- Campaign timeline
+## Milestone D — Strategic AI
+
+Planned:
+
+- autonomous faction decisions
+- fleet reinforcement and invasions
+- AI-resolved conflicts
+- logistics and supply
+- threat assessment
+
+## Milestone E — Living Galaxy
+
+Planned:
+
+- research and economy
+- diplomacy
+- exploration
+- fog of war and intelligence
+- dynamic mission generation
