@@ -4,20 +4,25 @@
 
 ### Added
 
-- Deterministic core bootstrap.
-- Shared constants and stable error codes.
-- Structured logging service.
-- Module registry with dependencies, initialization, and shutdown.
-- Configuration validation.
-- Phase 1 test documentation.
+- SQLite database abstraction.
+- Ordered migration registry and runner.
+- Schema metadata through `convergence_meta`.
+- Database transaction helper.
+- Database diagnostics command.
+- Index for planet stability-history queries.
+- Safe migration adoption for existing Phase 1 installations.
+
+### Changed
+
+- Addon version increased to `0.1.1`.
+- Database initialization now runs during deterministic bootstrap rather than
+  relying on an `Initialize` hook.
 
 ## 0.1.0
 
 - Added initial repository scaffold.
-- Added addon loader and shared namespace.
-- Added planet registry.
-- Added SQLite schema and persistence helpers.
-- Added stability transaction service.
-- Added basic network synchronization.
-- Added initial console commands.
-- Added SAM and SWU integration placeholders.
+- Added deterministic core bootstrap.
+- Added structured logging.
+- Added module lifecycle support.
+- Added configuration validation.
+- Added planet registry and stability persistence.

@@ -1,7 +1,7 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.1.0"
+Convergence.Version = "0.1.1"
 Convergence.SchemaVersion = 1
 Convergence.Root = "convergence/"
 
@@ -38,11 +38,15 @@ addShared(ROOT .. "core/sh_modules.lua")
 addShared(ROOT .. "core/sh_config.lua")
 addShared(ROOT .. "core/sh_planets.lua")
 
--- Persistent services
+-- Database foundation
 addServer(ROOT .. "database/sv_database.lua")
+addServer(ROOT .. "database/sv_migrations.lua")
+
+-- Persistent services
 addServer(ROOT .. "stability/sv_stability.lua")
 addServer(ROOT .. "network/sv_network.lua")
 addServer(ROOT .. "commands/sv_commands.lua")
+addServer(ROOT .. "commands/sv_diagnostics.lua")
 
 -- Optional integrations
 addServer(ROOT .. "integrations/sam/sv_sam.lua")
@@ -58,6 +62,16 @@ local valid, errors = Convergence.ValidateConfig()
 if not valid then
     for _, message in ipairs(errors) do
         Convergence.Log.Error("Config", message)
+    end
+end
+
+if SERVER then
+    local databaseReady, errorCode, errorMessage = Convergence.Database.Initialize()
+
+    if not databaseReady then
+        Convergence.Log.Error("Database", errorMessage, {
+            code = errorCode
+        })
     end
 end
 
