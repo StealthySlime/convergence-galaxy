@@ -46,6 +46,15 @@ concommand.Add("convergence_diagnostics", function(ply)
     print("Simulation queue:   " .. tostring(
         simulationReady and Convergence.Simulation.GetQueueLength() or 0
     ))
+    print("World service:      " .. statusLabel(
+        Convergence.World and Convergence.World.IsReady()
+    ))
+    print("Encounter active:   " .. tostring(
+        Convergence.World and Convergence.World.IsEncounterActive()
+    ))
+    print("SWU integration:    " .. statusLabel(
+        Convergence.SWUWorld and Convergence.SWUWorld.IsAvailable()
+    ))
     print("Galaxy Clock:       " .. statusLabel(clockReady))
     print("Clock running:      " .. statusLabel(
         clockReady and Convergence.Clock.IsRunning()

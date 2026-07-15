@@ -4,19 +4,23 @@
 
 ### Added
 
-- Persistent fleet orders and mission targets.
-- Move, patrol, defend, reinforce, invade, blockade, escort, retreat, and explore order types.
-- Fleet Orders simulation processor.
-- Initial influence and stability effects from active orders.
-- GM fleet-order commands and automated tests.
-- Directional fleet icons, engine trails, orbital animation, strength-scaled size, and fleet hover details.
-- Database migration 5.
+- Persistent world state and player task-force location.
+- SWU navigation-computer planet injection.
+- SWU physical-starmap proxy planets.
+- SWU hyperspace start/arrival synchronization.
+- Player task-force marker on the Convergence galaxy map.
+- Data-driven planet regions and GMod map associations.
+- GM-only map preparation and map-change commands.
+- Encounter activation and NPC-spawn protection.
+- Database migration 6.
+- World and SWU diagnostics/tests.
 
 ### Changed
 
-- Addon version increased to `0.6.0`.
-- Database schema increased to `5`.
+- Addon version increased to `0.7.0`.
+- Database schema increased to `6`.
+- Map transitions are never automatic.
 
-## 0.5.0
+## 0.6.0
 
-- Added persistent fleets and campaign-time travel.
+- Added persistent fleet orders.

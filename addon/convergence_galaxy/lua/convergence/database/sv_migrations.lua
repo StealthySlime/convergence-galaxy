@@ -121,3 +121,42 @@ DB.RegisterMigration(5, "Fleet orders and missions", function(database)
         ]]
     })
 end)
+
+
+DB.RegisterMigration(6, "Persistent world and player task force state", function(database)
+    return database.Transaction({
+        [[
+            CREATE TABLE IF NOT EXISTS convergence_world_state (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                current_planet_id TEXT,
+                destination_planet_id TEXT,
+                active_region_id TEXT,
+                current_map TEXT NOT NULL,
+                travel_status TEXT NOT NULL DEFAULT 'stationed',
+                encounter_active INTEGER NOT NULL DEFAULT 0,
+                swu_ship_x REAL,
+                swu_ship_y REAL,
+                swu_ship_z REAL,
+                updated_at INTEGER NOT NULL
+            )
+        ]],
+        string.format(
+            [[
+                INSERT OR IGNORE INTO convergence_world_state
+                (
+                    id, current_planet_id, destination_planet_id,
+                    active_region_id, current_map, travel_status,
+                    encounter_active, updated_at
+                )
+                VALUES
+                (
+                    1, %s, NULL, 'orbit', %s,
+                    'stationed', 0, %d
+                )
+            ]],
+            database.Escape(Convergence.Config.World.DefaultPlanetID or "coruscant"),
+            database.Escape(game.GetMap()),
+            os.time()
+        )
+    })
+end)

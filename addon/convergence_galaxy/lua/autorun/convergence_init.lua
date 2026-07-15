@@ -1,8 +1,8 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.6.0"
-Convergence.SchemaVersion = 5
+Convergence.Version = "0.7.0"
+Convergence.SchemaVersion = 6
 Convergence.Root = "convergence/"
 
 local ROOT = Convergence.Root
@@ -74,13 +74,16 @@ addServer(ROOT .. "simulation/processors/sv_fleet_order_processor.lua")
 addServer(ROOT .. "alliances/sv_influence.lua")
 addServer(ROOT .. "planets/sv_planet_service.lua")
 addServer(ROOT .. "stability/sv_stability.lua")
+addServer(ROOT .. "world/sv_world.lua")
 addServer(ROOT .. "fleets/sv_fleets.lua")
 addServer(ROOT .. "fleets/sv_orders.lua")
 
 addServer(ROOT .. "network/sv_network.lua")
 addServer(ROOT .. "network/sv_galaxy_snapshot.lua")
+addServer(ROOT .. "integrations/swu/sv_world_adapter.lua")
 addClient(ROOT .. "network/cl_network.lua")
 addClient(ROOT .. "network/cl_galaxy_snapshot.lua")
+addClient(ROOT .. "integrations/swu/cl_world_adapter.lua")
 
 addServer(ROOT .. "commands/sv_commands.lua")
 addServer(ROOT .. "commands/sv_diagnostics.lua")
@@ -92,6 +95,7 @@ addServer(ROOT .. "commands/sv_faction_commands.lua")
 addServer(ROOT .. "commands/sv_alliance_commands.lua")
 addServer(ROOT .. "commands/sv_fleet_commands.lua")
 addServer(ROOT .. "commands/sv_fleet_order_commands.lua")
+addServer(ROOT .. "commands/sv_world_commands.lua")
 addServer(ROOT .. "commands/sv_ui_commands.lua")
 
 addClient(ROOT .. "ui/cl_theme.lua")
@@ -149,6 +153,16 @@ if SERVER then
             Convergence.Log.Error("Fleets", "Fleet service initialization failed.", {
                 code = fleetCode,
                 error = fleetMessage
+            })
+        end
+
+        local worldReady, worldCode, worldMessage =
+            Convergence.World.Initialize()
+
+        if not worldReady then
+            Convergence.Log.Error("World", "World service initialization failed.", {
+                code = worldCode,
+                error = worldMessage
             })
         end
 

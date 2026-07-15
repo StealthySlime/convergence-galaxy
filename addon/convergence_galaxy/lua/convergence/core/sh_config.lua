@@ -23,6 +23,16 @@ Config.Simulation = {
     StopOnProcessorError = false
 }
 
+Config.World = {
+    PlayerTaskForceName = "Galactic Defense Coalition Task Force",
+    DefaultPlanetID = "coruscant",
+    ProtectNPCSpawning = true,
+    MainMaps = {
+        ["rp_venator"] = true,
+        ["rp_star_destroyer"] = true
+    }
+}
+
 Config.Galaxy = {
     MinZoom = 0.65,
     MaxZoom = 2.5,
@@ -54,19 +64,34 @@ Config.Planets = {
         id = "coruscant",
         name = "Coruscant",
         defaultStability = 100,
-        galaxy = {x = 0.24, y = 0.58, sector = "Core Worlds"}
+        galaxy = {x = 0.24, y = 0.58, sector = "Core Worlds"},
+        swu = {name = "Coruscant", pos = Vector(0, 0, 0)},
+        regions = {
+            {id = "orbit", name = "Coruscant Orbit", map = "rp_venator"},
+            {id = "surface", name = "Coruscant Surface", map = "rp_coruscant"}
+        }
     },
     {
         id = "tatooine",
         name = "Tatooine",
         defaultStability = 75,
-        galaxy = {x = 0.77, y = 0.64, sector = "Outer Rim"}
+        galaxy = {x = 0.77, y = 0.64, sector = "Outer Rim"},
+        swu = {name = "Tatooine", pos = Vector(3.2, -1.4, 0)},
+        regions = {
+            {id = "orbit", name = "Tatooine Orbit", map = "rp_venator"},
+            {id = "mos_eisley", name = "Mos Eisley", map = "rp_tatooine"}
+        }
     },
     {
         id = "reach",
         name = "Reach",
         defaultStability = 60,
-        galaxy = {x = 0.56, y = 0.27, sector = "Epsilon Eridani"}
+        galaxy = {x = 0.56, y = 0.27, sector = "Epsilon Eridani"},
+        swu = {name = "Reach", pos = Vector(1.7, 2.7, 0)},
+        regions = {
+            {id = "orbit", name = "Reach Orbit", map = "rp_venator"},
+            {id = "surface", name = "Reach Surface", map = "rp_reach"}
+        }
     }
 }
 

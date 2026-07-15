@@ -524,6 +524,45 @@ function PANEL:Paint(width, height)
         end
     end
 
+
+    local taskForce = data.playerTaskForce
+
+    if taskForce and tonumber(taskForce.mapX) and tonumber(taskForce.mapY) then
+        local taskX, taskY = mapToScreen(
+            self,
+            tonumber(taskForce.mapX),
+            tonumber(taskForce.mapY)
+        )
+        local pulseSize = 10 + ((math.sin(CurTime() * 4) + 1) * 2)
+
+        surface.SetDrawColor(255, 255, 255, 255)
+        draw.NoTexture()
+        surface.DrawPoly({
+            {x = taskX, y = taskY - pulseSize},
+            {x = taskX + pulseSize, y = taskY + pulseSize},
+            {x = taskX, y = taskY + pulseSize * 0.45},
+            {x = taskX - pulseSize, y = taskY + pulseSize}
+        })
+
+        drawCircleOutline(
+            taskX,
+            taskY,
+            pulseSize + 7,
+            Color(90, 215, 255, 220),
+            32
+        )
+
+        draw.SimpleText(
+            taskForce.name or "PLAYER TASK FORCE",
+            "Convergence.UI.Small",
+            taskX,
+            taskY + pulseSize + 8,
+            Color(120, 220, 255),
+            TEXT_ALIGN_CENTER,
+            TEXT_ALIGN_TOP
+        )
+    end
+
     drawScanlines(width, height)
 
     draw.SimpleText(
