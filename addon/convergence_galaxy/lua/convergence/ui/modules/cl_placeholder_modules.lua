@@ -16,6 +16,7 @@ local placeholders = {
         name = "GM Tools",
         order = 1000,
         adminOnly = true,
+        directorOnly = true,
         description = "Planet editing, influence controls, events, and campaign administration will appear here."
     }
 }
@@ -26,6 +27,7 @@ for _, definition in ipairs(placeholders) do
         name = definition.name,
         order = definition.order,
         adminOnly = definition.adminOnly,
+        directorOnly = definition.directorOnly,
 
         create = function(self, parent)
             return Convergence.UI.Components.CreateEmptyState(

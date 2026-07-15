@@ -3,6 +3,7 @@ Convergence.UI.RegisterModule({
     name = "Director",
     order = 5,
     adminOnly = true,
+    directorOnly = true,
 
     create = function(self, parent)
         local Components = Convergence.UI.Components

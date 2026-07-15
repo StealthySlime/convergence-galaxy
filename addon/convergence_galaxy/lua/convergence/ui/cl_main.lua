@@ -46,7 +46,7 @@ local function createNavigation(frame)
     UI.Navigation = navigation
     UI.NavigationButtons = {}
 
-    for _, module in ipairs(UI.GetModulesForPlayer(LocalPlayer())) do
+    for _, module in ipairs(UI.GetModulesForPlayer(LocalPlayer(), UI.Mode)) do
         local button = vgui.Create("DButton", navigation)
         button:Dock(TOP)
         button:SetTall(42)
@@ -147,6 +147,10 @@ function UI.SetActiveModule(id)
         return false
     end
 
+    if module.directorOnly and UI.Mode ~= "director" then
+        return false
+    end
+
     UI.ActiveModuleID = module.id
 
     if IsValid(UI.ModuleTitle) then
@@ -205,6 +209,16 @@ function UI.Open(mode)
 
     local modeChanged = UI.Mode ~= mode
     UI.Mode = mode
+
+    if modeChanged then
+        UI.ActiveModuleID = mode == "director" and "director" or "galaxy"
+    elseif not UI.GetModule(UI.ActiveModuleID)
+        or (
+            UI.GetModule(UI.ActiveModuleID).directorOnly
+            and mode ~= "director"
+        ) then
+        UI.ActiveModuleID = mode == "director" and "director" or "galaxy"
+    end
 
     if modeChanged and IsValid(UI.Frame) then
         UI.Frame:Remove()

@@ -49,6 +49,63 @@ function Adapter:ResolvePlanet(name)
     return Convergence.PlanetService.Get(normalized)
 end
 
+
+function Adapter:ResolveNearestPlanet(position)
+    if not isvector(position) then
+        return nil, math.huge
+    end
+
+    local nearestPlanet = nil
+    local nearestDistanceSquared = math.huge
+
+    for planetID, mapping in pairs(Convergence.SWUPlanetMapping or {}) do
+        if isvector(mapping.position) then
+            local distanceSquared = position:DistToSqr(mapping.position)
+
+            if distanceSquared < nearestDistanceSquared then
+                nearestDistanceSquared = distanceSquared
+                nearestPlanet = Convergence.PlanetService.Get(planetID)
+            end
+        end
+    end
+
+    return nearestPlanet, nearestDistanceSquared
+end
+
+function Adapter:ReconcileArrival(position)
+    if self:IsInHyperspace() or not isvector(position) then
+        return false
+    end
+
+    local nearestPlanet, distanceSquared = self:ResolveNearestPlanet(position)
+
+    -- SWU exits close to the selected universe coordinate. The generous
+    -- threshold tolerates offsets applied by the navigation addon while still
+    -- preventing unrelated positions from changing the current planet.
+    local threshold = 5000
+    local withinArrivalRange = nearestPlanet
+        and distanceSquared <= threshold * threshold
+
+    if not withinArrivalRange then
+        return false
+    end
+
+    local world = Convergence.World.GetState()
+
+    if world.currentPlanetID ~= nearestPlanet:GetID()
+        or world.travelStatus == "hyperspace" then
+        Convergence.World.Arrive(nearestPlanet:GetID(), position)
+
+        hook.Run(
+            "ConvergenceNavigationHyperspaceEnded",
+            self.ID,
+            nearestPlanet:GetID()
+        )
+    end
+
+    return true
+end
+
 function Adapter:IsConvergenceDestination(name)
     local normalized = Convergence.NormalizeID(name)
 
@@ -194,27 +251,35 @@ function Adapter:Poll()
     end
 
     if inHyperspace ~= self.LastHyperspace then
-        local planet = self:ResolvePlanet(destinationName)
+        local selectedPlanet = self:ResolvePlanet(destinationName)
 
-        if inHyperspace and planet then
-            Convergence.World.BeginHyperspace(planet:GetID(), position)
+        if inHyperspace and selectedPlanet then
+            Convergence.World.BeginHyperspace(selectedPlanet:GetID(), position)
+
             hook.Run(
                 "ConvergenceNavigationHyperspaceStarted",
                 self.ID,
-                planet:GetID()
+                selectedPlanet:GetID()
             )
-        elseif not inHyperspace
-            and planet
-            and Convergence.World.GetState().travelStatus == "hyperspace" then
-            Convergence.World.Arrive(planet:GetID(), position)
-            hook.Run(
-                "ConvergenceNavigationHyperspaceEnded",
-                self.ID,
-                planet:GetID()
-            )
+        elseif not inHyperspace then
+            -- The ship's actual SWU coordinate is authoritative on arrival.
+            -- Fall back to the selected destination only when position
+            -- reconciliation cannot identify a nearby mapped planet.
+            if not self:ReconcileArrival(position) and selectedPlanet then
+                Convergence.World.Arrive(selectedPlanet:GetID(), position)
+
+                hook.Run(
+                    "ConvergenceNavigationHyperspaceEnded",
+                    self.ID,
+                    selectedPlanet:GetID()
+                )
+            end
         end
 
         self.LastHyperspace = inHyperspace
+    elseif not inHyperspace then
+        -- Repairs stale states after reloads or missed SWU state transitions.
+        self:ReconcileArrival(position)
     end
 end
 

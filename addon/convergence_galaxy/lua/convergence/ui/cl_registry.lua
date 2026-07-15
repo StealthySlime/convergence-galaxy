@@ -29,6 +29,7 @@ function UI.RegisterModule(definition)
     definition.order = tonumber(definition.order) or 100
     definition.icon = tostring(definition.icon or "")
     definition.adminOnly = definition.adminOnly == true
+    definition.directorOnly = definition.directorOnly == true
 
     UI.Modules[id] = definition
     UI.ModuleOrder[#UI.ModuleOrder + 1] = id
@@ -51,15 +52,30 @@ function UI.GetModule(id)
     return UI.Modules[Convergence.NormalizeID(id)]
 end
 
-function UI.GetModulesForPlayer(ply)
+function UI.GetModulesForPlayer(ply, mode)
+    mode = Convergence.NormalizeID(mode or UI.Mode or "player")
+
     local result = {}
 
     for _, id in ipairs(UI.ModuleOrder) do
         local module = UI.Modules[id]
+        local allowed = true
 
-        if not module.adminOnly or (IsValid(ply) and ply:IsAdmin()) then
+        if module.adminOnly and not (IsValid(ply) and ply:IsAdmin()) then
+            allowed = false
+        end
+
+        if module.directorOnly and mode ~= "director" then
+            allowed = false
+        end
+
+        if allowed then
             result[#result + 1] = module
         end
+    end
+
+    return result
+end
     end
 
     return result

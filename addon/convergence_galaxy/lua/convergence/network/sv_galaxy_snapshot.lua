@@ -86,12 +86,17 @@ local function buildSnapshot(ply, requestedMode)
         snapshot.planets[id] = {
             state = planet:ToPublicTable(),
             map = table.Copy(definition.galaxy or {}),
-            swu = definition.swu and {
-                name = definition.swu.name,
+            swu = (
+                Convergence.SWUPlanetMapping
+                and Convergence.SWUPlanetMapping[id]
+                and isvector(Convergence.SWUPlanetMapping[id].position)
+            ) and {
+                name = Convergence.SWUPlanetMapping[id].navigationName
+                    or planet:GetName(),
                 pos = {
-                    x = definition.swu.pos.x,
-                    y = definition.swu.pos.y,
-                    z = definition.swu.pos.z
+                    x = Convergence.SWUPlanetMapping[id].position.x,
+                    y = Convergence.SWUPlanetMapping[id].position.y,
+                    z = Convergence.SWUPlanetMapping[id].position.z
                 }
             } or nil,
             regions = mode == MODE_DIRECTOR

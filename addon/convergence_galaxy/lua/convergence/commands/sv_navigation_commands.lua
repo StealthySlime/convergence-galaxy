@@ -19,5 +19,19 @@ concommand.Add("convergence_navigation_status", function(ply)
 
     local position = Convergence.Navigation.GetCurrentPosition()
     print("Ship position:  " .. tostring(position or "Unavailable"))
+
+    if position
+        and adapter
+        and adapter.ResolveNearestPlanet then
+        local nearest, distanceSquared =
+            adapter:ResolveNearestPlanet(position)
+
+        print("Nearest planet: " .. tostring(
+            nearest and nearest:GetName() or "None"
+        ))
+        print("Distance:       " .. tostring(
+            math.sqrt(distanceSquared or 0)
+        ))
+    end
     print("============================================")
 end)
