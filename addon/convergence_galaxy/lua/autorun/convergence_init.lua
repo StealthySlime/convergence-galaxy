@@ -1,7 +1,7 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.4.0"
+Convergence.Version = "0.4.1"
 Convergence.SchemaVersion = 3
 Convergence.Root = "convergence/"
 

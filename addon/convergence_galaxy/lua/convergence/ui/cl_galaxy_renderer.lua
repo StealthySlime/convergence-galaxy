@@ -1,19 +1,66 @@
 Convergence.UI = Convergence.UI or {}
 
 local Theme = Convergence.UI.Theme
-
 local PANEL = {}
 
+local function drawCircleOutline(x, y, radius, color, segments)
+    segments = segments or 48
+    surface.SetDrawColor(color)
+
+    local previousX = x + radius
+    local previousY = y
+
+    for index = 1, segments do
+        local angle = math.rad((index / segments) * 360)
+        local currentX = x + math.cos(angle) * radius
+        local currentY = y + math.sin(angle) * radius
+
+        surface.DrawLine(previousX, previousY, currentX, currentY)
+
+        previousX = currentX
+        previousY = currentY
+    end
+end
+
+local function drawRotatingRing(x, y, radius, rotation, color, segments)
+    segments = segments or 36
+    surface.SetDrawColor(color)
+
+    for index = 0, segments - 1 do
+        if index % 3 ~= 2 then
+            local angleA = math.rad(rotation + (index / segments) * 360)
+            local angleB = math.rad(rotation + ((index + 0.7) / segments) * 360)
+
+            surface.DrawLine(
+                x + math.cos(angleA) * radius,
+                y + math.sin(angleA) * radius,
+                x + math.cos(angleB) * radius,
+                y + math.sin(angleB) * radius
+            )
+        end
+    end
+end
+
 function PANEL:Init()
-    self.Zoom = 1
+    local configuration = Convergence.Config.Galaxy or {}
+
+    self.Zoom = tonumber(configuration.DefaultZoom) or 1
+    self.TargetZoom = self.Zoom
+
     self.OffsetX = 0
     self.OffsetY = 0
+    self.TargetOffsetX = 0
+    self.TargetOffsetY = 0
+
     self.Dragging = false
     self.LastMouseX = 0
     self.LastMouseY = 0
     self.HoveredPlanetID = nil
     self.SelectedPlanetID = nil
     self.NodePositions = {}
+    self.HoverAlpha = 0
+    self.HoverPlanetID = nil
+
     self:SetMouseInputEnabled(true)
 end
 
@@ -33,6 +80,14 @@ end
 function PANEL:OnPlanetSelected(id)
 end
 
+function PANEL:ResetView()
+    local configuration = Convergence.Config.Galaxy or {}
+
+    self.TargetZoom = tonumber(configuration.DefaultZoom) or 1
+    self.TargetOffsetX = 0
+    self.TargetOffsetY = 0
+end
+
 function PANEL:OnMousePressed(code)
     if code == MOUSE_LEFT then
         if self.HoveredPlanetID then
@@ -45,9 +100,7 @@ function PANEL:OnMousePressed(code)
         self.LastMouseX, self.LastMouseY = self:CursorPos()
         self:MouseCapture(true)
     elseif code == MOUSE_RIGHT then
-        self.Zoom = 1
-        self.OffsetX = 0
-        self.OffsetY = 0
+        self:ResetView()
     end
 end
 
@@ -62,54 +115,89 @@ function PANEL:OnMouseWheeled(delta)
     local configuration = Convergence.Config.Galaxy or {}
     local minimum = tonumber(configuration.MinZoom) or 0.65
     local maximum = tonumber(configuration.MaxZoom) or 2.5
-    local oldZoom = self.Zoom
-    local newZoom = math.Clamp(oldZoom + delta * 0.1, minimum, maximum)
 
-    if newZoom == oldZoom then
+    local mouseX, mouseY = self:CursorPos()
+    local oldTarget = self.TargetZoom
+    local newTarget = math.Clamp(oldTarget + delta * 0.12, minimum, maximum)
+
+    if newTarget == oldTarget then
         return true
     end
 
-    local mouseX, mouseY = self:CursorPos()
-    local centerX = self:GetWide() / 2 + self.OffsetX
-    local centerY = self:GetTall() / 2 + self.OffsetY
-    local worldX = (mouseX - centerX) / oldZoom
-    local worldY = (mouseY - centerY) / oldZoom
+    local centerX = self:GetWide() / 2 + self.TargetOffsetX
+    local centerY = self:GetTall() / 2 + self.TargetOffsetY
+    local worldX = (mouseX - centerX) / oldTarget
+    local worldY = (mouseY - centerY) / oldTarget
 
-    self.Zoom = newZoom
-    self.OffsetX = mouseX - self:GetWide() / 2 - worldX * newZoom
-    self.OffsetY = mouseY - self:GetTall() / 2 - worldY * newZoom
+    self.TargetZoom = newTarget
+    self.TargetOffsetX = mouseX - self:GetWide() / 2 - worldX * newTarget
+    self.TargetOffsetY = mouseY - self:GetTall() / 2 - worldY * newTarget
 
     return true
 end
 
 function PANEL:Think()
+    local configuration = Convergence.Config.Galaxy or {}
+    local frameTime = FrameTime()
+
     if self.Dragging then
         local mouseX, mouseY = self:CursorPos()
-        self.OffsetX = self.OffsetX + (mouseX - self.LastMouseX)
-        self.OffsetY = self.OffsetY + (mouseY - self.LastMouseY)
+
+        self.TargetOffsetX = self.TargetOffsetX + (mouseX - self.LastMouseX)
+        self.TargetOffsetY = self.TargetOffsetY + (mouseY - self.LastMouseY)
+
         self.LastMouseX = mouseX
         self.LastMouseY = mouseY
     end
 
+    self.Zoom = Lerp(
+        math.Clamp(frameTime * (tonumber(configuration.ZoomSmoothing) or 10), 0, 1),
+        self.Zoom,
+        self.TargetZoom
+    )
+
+    self.OffsetX = Lerp(
+        math.Clamp(frameTime * (tonumber(configuration.PanSmoothing) or 14), 0, 1),
+        self.OffsetX,
+        self.TargetOffsetX
+    )
+
+    self.OffsetY = Lerp(
+        math.Clamp(frameTime * (tonumber(configuration.PanSmoothing) or 14), 0, 1),
+        self.OffsetY,
+        self.TargetOffsetY
+    )
+
     local mouseX, mouseY = self:CursorPos()
-    self.HoveredPlanetID = nil
+    local hoveredID = nil
 
     for id, position in pairs(self.NodePositions) do
         local dx = mouseX - position.x
         local dy = mouseY - position.y
-        local radius = position.radius + 8
+        local radius = position.radius + 10
 
         if dx * dx + dy * dy <= radius * radius then
-            self.HoveredPlanetID = id
+            hoveredID = id
             break
         end
     end
+
+    self.HoveredPlanetID = hoveredID
+
+    if hoveredID ~= self.HoverPlanetID then
+        self.HoverPlanetID = hoveredID
+        self.HoverAlpha = 0
+    end
+
+    local targetAlpha = hoveredID and 255 or 0
+    self.HoverAlpha = Lerp(math.Clamp(frameTime * 12, 0, 1), self.HoverAlpha, targetAlpha)
 end
 
 local function mapToScreen(panel, x, y)
     local width = panel:GetWide()
     local height = panel:GetTall()
     local padding = 95
+
     local baseX = padding + x * math.max(width - padding * 2, 1)
     local baseY = padding + y * math.max(height - padding * 2, 1)
 
@@ -121,26 +209,26 @@ local function mapToScreen(panel, x, y)
 end
 
 local function drawStarfield(width, height)
-    surface.SetDrawColor(110, 180, 255, 70)
-
-    for index = 1, 90 do
+    for index = 1, 130 do
         local x = (index * 157) % math.max(width, 1)
         local y = (index * 263) % math.max(height, 1)
-        local size = index % 11 == 0 and 2 or 1
+        local shimmer = 35 + math.sin(CurTime() * 1.8 + index) * 20
+        local size = index % 13 == 0 and 2 or 1
+
+        surface.SetDrawColor(120, 190, 255, shimmer)
         surface.DrawRect(x, y, size, size)
     end
 end
 
 local function drawGrid(panel, width, height)
-    surface.SetDrawColor(45, 130, 200, 18)
+    local configuration = Convergence.Config.Galaxy or {}
+    local drift = CurTime() * (tonumber(configuration.GridDriftSpeed) or 4)
 
-    local spacing = 64 * panel.Zoom
-    if spacing < 24 then
-        spacing = 24
-    end
+    surface.SetDrawColor(45, 130, 200, 20)
 
-    local startX = panel.OffsetX % spacing
-    local startY = panel.OffsetY % spacing
+    local spacing = math.max(64 * panel.Zoom, 24)
+    local startX = (panel.OffsetX + drift) % spacing
+    local startY = (panel.OffsetY + drift * 0.4) % spacing
 
     for x = startX, width, spacing do
         surface.DrawLine(x, 0, x, height)
@@ -151,14 +239,53 @@ local function drawGrid(panel, width, height)
     end
 end
 
+local function drawScanlines(width, height)
+    local configuration = Convergence.Config.Galaxy or {}
+    local speed = tonumber(configuration.ScanlineSpeed) or 18
+    local offset = (CurTime() * speed) % 8
+
+    surface.SetDrawColor(60, 150, 220, 10)
+
+    for y = offset, height, 8 do
+        surface.DrawRect(0, y, width, 1)
+    end
+end
+
+local function drawHyperlane(left, right, color)
+    surface.SetDrawColor(color)
+    surface.DrawLine(left.x, left.y, right.x, right.y)
+
+    local dx = right.x - left.x
+    local dy = right.y - left.y
+    local length = math.sqrt(dx * dx + dy * dy)
+
+    if length <= 0 then
+        return
+    end
+
+    local speed = tonumber(Convergence.Config.Galaxy.HyperlanePulseSpeed) or 110
+    local spacing = 80
+    local phase = (CurTime() * speed) % spacing
+
+    for distance = phase, length, spacing do
+        local fraction = distance / length
+        local x = left.x + dx * fraction
+        local y = left.y + dy * fraction
+
+        draw.RoundedBox(3, x - 3, y - 3, 6, 6, Color(110, 210, 255, 190))
+    end
+end
+
 function PANEL:Paint(width, height)
-    draw.RoundedBox(6, 0, 0, width, height, Color(3, 10, 18, 245))
+    draw.RoundedBox(6, 0, 0, width, height, Color(2, 8, 16, 248))
+
     drawStarfield(width, height)
     drawGrid(self, width, height)
 
     local data = self.Data or {}
     local planets = data.planets or {}
     local routes = (data.galaxy and data.galaxy.routes) or {}
+
     self.NodePositions = {}
 
     for id, planetData in pairs(planets) do
@@ -168,6 +295,7 @@ function PANEL:Paint(width, height)
 
         if x and y then
             local screenX, screenY = mapToScreen(self, x, y)
+
             self.NodePositions[id] = {
                 x = screenX,
                 y = screenY,
@@ -176,18 +304,17 @@ function PANEL:Paint(width, height)
         end
     end
 
-    surface.SetDrawColor(Theme.GetColor("border"))
-
     for _, route in ipairs(routes) do
         local left = self.NodePositions[route[1]]
         local right = self.NodePositions[route[2]]
 
         if left and right then
-            surface.DrawLine(left.x, left.y, right.x, right.y)
+            drawHyperlane(left, right, Color(50, 145, 220, 85))
         end
     end
 
-    local pulse = (math.sin(CurTime() * 3) + 1) / 2
+    local pulse = (math.sin(CurTime() * 3.2) + 1) / 2
+    local rotation = CurTime() * 40
 
     for id, position in pairs(self.NodePositions) do
         local planetData = planets[id] or {}
@@ -198,29 +325,55 @@ function PANEL:Paint(width, height)
         local selected = self.SelectedPlanetID == id
 
         local radius = position.radius
-        local glowRadius = radius + 6 + (selected and pulse * 8 or 0)
+        local hoverScale = hovered and 1.18 or 1
+        local nodeRadius = radius * hoverScale
+        local glowRadius = nodeRadius + 8 + (selected and pulse * 9 or 0)
 
-        surface.SetDrawColor(color.r, color.g, color.b, selected and 70 or 35)
-        draw.NoTexture()
-        surface.DrawCircle(position.x, position.y, glowRadius, color.r, color.g, color.b, 60)
+        for layer = 3, 1, -1 do
+            local alpha = 12 * layer
+            drawCircleOutline(
+                position.x,
+                position.y,
+                glowRadius + layer * 5,
+                Color(color.r, color.g, color.b, alpha),
+                40
+            )
+        end
 
         draw.RoundedBox(
-            radius,
-            position.x - radius,
-            position.y - radius,
-            radius * 2,
-            radius * 2,
+            nodeRadius,
+            position.x - nodeRadius,
+            position.y - nodeRadius,
+            nodeRadius * 2,
+            nodeRadius * 2,
             color
         )
 
-        if hovered or selected then
-            surface.SetDrawColor(255, 255, 255, 230)
-            surface.DrawOutlinedRect(
-                position.x - radius - 5,
-                position.y - radius - 5,
-                radius * 2 + 10,
-                radius * 2 + 10,
-                1
+        drawCircleOutline(
+            position.x,
+            position.y,
+            nodeRadius + 4,
+            Color(220, 245, 255, 180),
+            36
+        )
+
+        if selected then
+            drawRotatingRing(
+                position.x,
+                position.y,
+                nodeRadius + 13 + pulse * 3,
+                rotation,
+                Color(100, 210, 255, 220),
+                42
+            )
+        elseif hovered then
+            drawRotatingRing(
+                position.x,
+                position.y,
+                nodeRadius + 10,
+                -rotation * 0.65,
+                Color(180, 230, 255, 150),
+                30
             )
         end
 
@@ -228,12 +381,14 @@ function PANEL:Paint(width, height)
             state.name or id,
             "Convergence.UI.Nav",
             position.x,
-            position.y + radius + 12,
+            position.y + nodeRadius + 14,
             Theme.GetColor("text"),
             TEXT_ALIGN_CENTER,
             TEXT_ALIGN_TOP
         )
     end
+
+    drawScanlines(width, height)
 
     draw.SimpleText(
         string.format("ZOOM %.0f%%", self.Zoom * 100),
@@ -255,12 +410,12 @@ function PANEL:Paint(width, height)
         TEXT_ALIGN_CENTER
     )
 
-    if self.HoveredPlanetID then
-        self:DrawTooltip(self.HoveredPlanetID, width, height)
+    if self.HoveredPlanetID and self.HoverAlpha > 2 then
+        self:DrawTooltip(self.HoveredPlanetID, width, height, self.HoverAlpha)
     end
 end
 
-function PANEL:DrawTooltip(id, width, height)
+function PANEL:DrawTooltip(id, width, height, alpha)
     local data = self.Data or {}
     local planetData = (data.planets or {})[id]
 
@@ -295,8 +450,18 @@ function PANEL:DrawTooltip(id, width, height)
     x = math.Clamp(x, 8, math.max(width - tooltipWidth - 8, 8))
     y = math.Clamp(y, 8, math.max(height - tooltipHeight - 8, 8))
 
-    draw.RoundedBox(6, x, y, tooltipWidth, tooltipHeight, Color(5, 18, 31, 252))
-    surface.SetDrawColor(Theme.GetColor("accent"))
+    alpha = math.Clamp(alpha, 0, 255)
+
+    draw.RoundedBox(
+        6,
+        x,
+        y,
+        tooltipWidth,
+        tooltipHeight,
+        Color(4, 16, 29, math.floor(alpha * 0.98))
+    )
+
+    surface.SetDrawColor(70, 170, 245, alpha)
     surface.DrawOutlinedRect(x, y, tooltipWidth, tooltipHeight, 1)
 
     local stabilityColor = Theme.GetStabilityColor(state.stability)
@@ -306,7 +471,7 @@ function PANEL:DrawTooltip(id, width, height)
         "Convergence.UI.Header",
         x + 14,
         y + 16,
-        Theme.GetColor("text"),
+        Color(225, 242, 255, alpha),
         TEXT_ALIGN_LEFT,
         TEXT_ALIGN_CENTER
     )
@@ -320,7 +485,7 @@ function PANEL:DrawTooltip(id, width, height)
         "Convergence.UI.Body",
         x + 14,
         y + 48,
-        stabilityColor,
+        Color(stabilityColor.r, stabilityColor.g, stabilityColor.b, alpha),
         TEXT_ALIGN_LEFT,
         TEXT_ALIGN_CENTER
     )
@@ -332,7 +497,7 @@ function PANEL:DrawTooltip(id, width, height)
         "Convergence.UI.Small",
         x + 14,
         y + 74,
-        Theme.GetColor("textMuted"),
+        Color(135, 170, 195, alpha),
         TEXT_ALIGN_LEFT,
         TEXT_ALIGN_CENTER
     )
@@ -344,7 +509,7 @@ function PANEL:DrawTooltip(id, width, height)
         "Convergence.UI.Small",
         x + 14,
         y + 96,
-        Theme.GetColor("textMuted"),
+        Color(135, 170, 195, alpha),
         TEXT_ALIGN_LEFT,
         TEXT_ALIGN_CENTER
     )
@@ -354,7 +519,7 @@ function PANEL:DrawTooltip(id, width, height)
         "Convergence.UI.Nav",
         x + 14,
         y + 122,
-        Theme.GetColor("accent"),
+        Color(70, 170, 245, alpha),
         TEXT_ALIGN_LEFT,
         TEXT_ALIGN_CENTER
     )
@@ -374,7 +539,7 @@ function PANEL:DrawTooltip(id, width, height)
             "Convergence.UI.Small",
             x + 14,
             lineY,
-            factionColor,
+            Color(factionColor.r, factionColor.g, factionColor.b, alpha),
             TEXT_ALIGN_LEFT,
             TEXT_ALIGN_CENTER
         )

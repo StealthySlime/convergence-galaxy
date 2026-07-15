@@ -27,7 +27,12 @@ Config.Galaxy = {
     MinZoom = 0.65,
     MaxZoom = 2.5,
     DefaultZoom = 1,
+    ZoomSmoothing = 10,
+    PanSmoothing = 14,
     NodeRadius = 13,
+    ScanlineSpeed = 18,
+    GridDriftSpeed = 4,
+    HyperlanePulseSpeed = 110,
     Routes = {
         {"coruscant", "tatooine"},
         {"coruscant", "reach"},
@@ -36,42 +41,12 @@ Config.Galaxy = {
 }
 
 Config.StabilityStates = {
-    {
-        id = "collapse",
-        name = "Collapse",
-        minimum = 0,
-        maximum = 0
-    },
-    {
-        id = "convergence",
-        name = "Convergence",
-        minimum = 1,
-        maximum = 20
-    },
-    {
-        id = "critical",
-        name = "Critical",
-        minimum = 21,
-        maximum = 40
-    },
-    {
-        id = "unstable",
-        name = "Unstable",
-        minimum = 41,
-        maximum = 60
-    },
-    {
-        id = "strained",
-        name = "Strained",
-        minimum = 61,
-        maximum = 80
-    },
-    {
-        id = "stable",
-        name = "Stable",
-        minimum = 81,
-        maximum = 100
-    }
+    {id = "collapse", name = "Collapse", minimum = 0, maximum = 0},
+    {id = "convergence", name = "Convergence", minimum = 1, maximum = 20},
+    {id = "critical", name = "Critical", minimum = 21, maximum = 40},
+    {id = "unstable", name = "Unstable", minimum = 41, maximum = 60},
+    {id = "strained", name = "Strained", minimum = 61, maximum = 80},
+    {id = "stable", name = "Stable", minimum = 81, maximum = 100}
 }
 
 Config.Planets = {
@@ -79,31 +54,19 @@ Config.Planets = {
         id = "coruscant",
         name = "Coruscant",
         defaultStability = 100,
-        galaxy = {
-            x = 0.24,
-            y = 0.58,
-            sector = "Core Worlds"
-        }
+        galaxy = {x = 0.24, y = 0.58, sector = "Core Worlds"}
     },
     {
         id = "tatooine",
         name = "Tatooine",
         defaultStability = 75,
-        galaxy = {
-            x = 0.77,
-            y = 0.64,
-            sector = "Outer Rim"
-        }
+        galaxy = {x = 0.77, y = 0.64, sector = "Outer Rim"}
     },
     {
         id = "reach",
         name = "Reach",
         defaultStability = 60,
-        galaxy = {
-            x = 0.56,
-            y = 0.27,
-            sector = "Epsilon Eridani"
-        }
+        galaxy = {x = 0.56, y = 0.27, sector = "Epsilon Eridani"}
     }
 }
 
@@ -130,20 +93,6 @@ function Convergence.ValidateConfig()
 
     if not istable(Config.StabilityStates) or #Config.StabilityStates == 0 then
         errors[#errors + 1] = "At least one stability state must be configured."
-    end
-
-    local seenStates = {}
-
-    for index, state in ipairs(Config.StabilityStates or {}) do
-        local id = Convergence.NormalizeID(state.id)
-
-        if id == "" then
-            errors[#errors + 1] = "Stability state #" .. index .. " has no valid ID."
-        elseif seenStates[id] then
-            errors[#errors + 1] = "Duplicate stability state ID: " .. id
-        else
-            seenStates[id] = true
-        end
     end
 
     local seenPlanets = {}

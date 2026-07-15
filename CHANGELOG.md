@@ -4,24 +4,24 @@
 
 ### Added
 
-- Interactive Galaxy Renderer.
-- Zoom, pan, and reset controls.
-- Data-driven planet coordinates and sectors.
-- Route rendering.
-- Stability-colored planet nodes.
-- Hover tooltips with exact stability percentage.
-- Dominant faction, alliance, and influence hover details.
-- Selected-node pulse and inspector synchronization.
+- Holographic tactical rendering effects.
+- Smooth zoom and pan interpolation.
+- Animated grid drift and scanlines.
+- Shimmering starfield.
+- Hyperlane traffic pulses.
+- Layered planet glows.
+- Rotating selection and hover rings.
+- Tooltip fade transitions.
+- Hover scaling for planet nodes.
 
 ### Changed
 
-- Addon version increased to `0.4.0`.
-- Galaxy page now uses the interactive renderer instead of a planet list.
+- Addon version increased to `0.4.1`.
+
+## 0.4.0
+
+- Added the interactive Galaxy Renderer.
 
 ## 0.3.1
 
-- Added UI polish and fixed header actions.
-
-## 0.3.0
-
-- Added Galactic Command UI framework.
+- Added UI polish and fixed header controls.
