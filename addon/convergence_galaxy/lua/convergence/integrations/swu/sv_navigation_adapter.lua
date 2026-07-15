@@ -364,10 +364,122 @@ function Adapter:PatchController()
     return true
 end
 
+
+local function upsertPlanetIntoList(list, name, position)
+    if not istable(list) then
+        return false
+    end
+
+    local normalized = Convergence.NormalizeID(name)
+
+    for _, entry in ipairs(list) do
+        if istable(entry)
+            and Convergence.NormalizeID(
+                entry.name or entry.Name or entry.id or entry.ID
+            ) == normalized then
+            entry.name = entry.name or name
+            entry.Name = entry.Name or name
+            entry.pos = Vector(position.x, position.y, position.z)
+            entry.position = entry.position
+                or Vector(position.x, position.y, position.z)
+            entry.Position = entry.Position
+                or Vector(position.x, position.y, position.z)
+            return true
+        end
+    end
+
+    list[#list + 1] = {
+        name = name,
+        Name = name,
+        id = normalized,
+        pos = Vector(position.x, position.y, position.z),
+        position = Vector(position.x, position.y, position.z),
+        Position = Vector(position.x, position.y, position.z)
+    }
+
+    return true
+end
+
+function Adapter:SyncExternalPlanetRegistries()
+    if not SWU then
+        return 0
+    end
+
+    local registries = {
+        SWU.Planets,
+        SWU.AllPlanets,
+        SWU.PlanetList,
+        SWU.Config and SWU.Config.Planets,
+        SWU.Configuration and SWU.Configuration.Planets,
+        SWU.Controller and SWU.Controller.Planets,
+        SWU.NavigationComputer and SWU.NavigationComputer.Planets,
+        SWU.NavigationComputer and SWU.NavigationComputer.allPlanets
+    }
+
+    local writes = 0
+
+    for _, definition in ipairs(
+        Convergence.Config.Planets or {}
+    ) do
+        local planetID = Convergence.NormalizeID(definition.id)
+        local mapping = (Convergence.SWUPlanetMapping or {})[planetID]
+        local name = mapping and mapping.navigationName
+            or definition.swu and definition.swu.name
+            or definition.name
+            or planetID
+        local position = mapping and mapping.position
+            or definition.swu and definition.swu.pos
+
+        if isvector(position) then
+            -- Guarantee every configured Convergence planet has a mapping.
+            Convergence.SWUPlanetMapping[planetID] = {
+                navigationName = name,
+                position = Vector(position.x, position.y, position.z)
+            }
+
+            for _, registry in ipairs(registries) do
+                if upsertPlanetIntoList(registry, name, position) then
+                    writes = writes + 1
+                end
+            end
+
+            -- Some SWU builds expose registration functions instead of tables.
+            for _, target in ipairs({
+                SWU,
+                SWU.Configuration,
+                SWU.NavigationComputer
+            }) do
+                if istable(target) then
+                    for _, functionName in ipairs({
+                        "RegisterPlanet",
+                        "AddPlanet",
+                        "CreatePlanet"
+                    }) do
+                        local method = target[functionName]
+
+                        if isfunction(method) then
+                            pcall(
+                                method,
+                                target,
+                                name,
+                                Vector(position.x, position.y, position.z)
+                            )
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return writes
+end
+
 function Adapter:SyncPlanets()
     if not self:IsAvailable() then
         return false, "SWU navigation computer is unavailable."
     end
+
+    self:SyncExternalPlanetRegistries()
 
     local computer = SWU.NavigationComputer
 
@@ -446,10 +558,85 @@ function Adapter:SyncPlanets()
     end
 
     self:RefreshMappedCoordinates()
+    self:SyncExternalPlanetRegistries()
     self:PatchNavigationComputer()
     self:PatchController()
 
     return true
+end
+
+
+function Adapter:ResetNavigationAfterArrival()
+    if not self:IsAvailable() then
+        self.ActiveTravelProfile = nil
+        self.LastDestinationName = nil
+        return
+    end
+
+    local computer = SWU.NavigationComputer
+
+    -- Clear the temporary Convergence speed modifier so the next destination
+    -- can calculate its own travel profile.
+    local externalConVar = SWU.Configuration
+        and SWU.Configuration:GetConVar(
+            "swu_external_hyperspace_speed_modifier"
+        )
+
+    if externalConVar and externalConVar.SetFloat then
+        externalConVar:SetFloat(1)
+    else
+        RunConsoleCommand(
+            "swu_external_hyperspace_speed_modifier",
+            "1"
+        )
+    end
+
+    -- Different SWU versions expose different network-var setters. Clear every
+    -- supported piece of completed-jump state without assuming one API.
+    local resetCalls = {
+        {"SetLoading", false},
+        {"SetCanJump", false},
+        {"SetTargetPlanet", ""},
+        {"SetSelectedPlanet", ""},
+        {"SetTarget", ""},
+        {"SetTargetVector", Vector(0, 0, 0)},
+        {"SetEstimatedJumpTime", 0},
+        {"SetJumpProgress", 0},
+        {"SetProgress", 0}
+    }
+
+    for _, call in ipairs(resetCalls) do
+        local method = computer[call[1]]
+
+        if isfunction(method) then
+            pcall(method, computer, call[2])
+        end
+    end
+
+    -- Reset search/page state so the navigation list becomes selectable again.
+    if isfunction(computer.SetSearchTerm) then
+        pcall(computer.SetSearchTerm, computer, "")
+    end
+
+    if isfunction(computer.SetCurPage) then
+        pcall(computer.SetCurPage, computer, 1)
+    end
+
+    if isfunction(computer.UpdatePageValue) then
+        pcall(computer.UpdatePageValue, computer)
+    end
+
+    -- Some builds store these as ordinary Lua fields rather than network vars.
+    computer.TargetPlanet = nil
+    computer.SelectedPlanet = nil
+    computer.Target = nil
+    computer.Loading = false
+    computer.CanJumpState = false
+
+    self.ActiveTravelProfile = nil
+    self.LastDestinationName = nil
+
+    hook.Run("ConvergenceNavigationComputerReset", self.ID)
 end
 
 function Adapter:Poll()
@@ -479,8 +666,29 @@ function Adapter:Poll()
         return
     end
 
+    if inHyperspace
+        and self.ActiveTravelProfile
+        and self.ActiveTravelProfile.startedAt
+        and CurTime() >= (
+            self.ActiveTravelProfile.startedAt
+            + self.ActiveTravelProfile.desiredSeconds
+            + 5
+        ) then
+        -- Compatibility fallback for SWU builds that do not apply the
+        -- external speed modifier to their exit timer.
+        if isfunction(SWU.Controller.ExitHyperspace) then
+            pcall(SWU.Controller.ExitHyperspace, SWU.Controller)
+        elseif isfunction(SWU.Controller.SetHyperspace) then
+            pcall(SWU.Controller.SetHyperspace, SWU.Controller, 0)
+        end
+    end
+
     if inHyperspace ~= self.LastHyperspace then
         if inHyperspace then
+            if self.ActiveTravelProfile then
+                self.ActiveTravelProfile.startedAt = CurTime()
+            end
+
             if selectedPlanet then
                 Convergence.World.BeginHyperspace(
                     selectedPlanet:GetID(),
@@ -501,10 +709,30 @@ function Adapter:Poll()
                 or Convergence.PlanetService.Get(worldDestination)
 
             if arrivalPlanet then
+                local arrivalPosition =
+                    self:GetMappedPosition(arrivalPlanet:GetID())
+
+                if isvector(arrivalPosition)
+                    and IsValid(SWU.Controller)
+                    and isfunction(SWU.Controller.SetShipPos) then
+                    pcall(
+                        SWU.Controller.SetShipPos,
+                        SWU.Controller,
+                        Vector(
+                            arrivalPosition.x,
+                            arrivalPosition.y,
+                            arrivalPosition.z
+                        )
+                    )
+                    position = arrivalPosition
+                end
+
                 Convergence.World.Arrive(
                     arrivalPlanet:GetID(),
                     position
                 )
+
+                self:ResetNavigationAfterArrival()
 
                 hook.Run(
                     "ConvergenceNavigationHyperspaceEnded",
@@ -614,4 +842,87 @@ concommand.Add("convergence_swu_reconcile_position", function(ply)
     print(success
         and "[Convergence] Current SWU position matched and synchronized."
         or "[Convergence] Current SWU position is not close to a registered Convergence planet.")
+end)
+
+
+concommand.Add("convergence_swu_planet_status", function(ply)
+    if IsValid(ply) and not ply:IsAdmin() then
+        return
+    end
+
+    print("========== Convergence SWU Planet Status ==========")
+
+    for _, definition in ipairs(
+        Convergence.Config.Planets or {}
+    ) do
+        local planetID = Convergence.NormalizeID(definition.id)
+        local mapping = (Convergence.SWUPlanetMapping or {})[planetID]
+        local name = mapping and mapping.navigationName
+            or definition.name
+        local navEntry = Adapter:FindSWUPlanetEntry(name)
+
+        print(string.format(
+            "%-16s mapping=%-5s navigation=%-5s position=%s",
+            planetID,
+            mapping and "PASS" or "FAIL",
+            navEntry and "PASS" or "FAIL",
+            tostring(mapping and mapping.position or "nil")
+        ))
+    end
+
+    print("===================================================")
+end)
+
+
+concommand.Add("convergence_swu_force_arrival", function(ply)
+    if IsValid(ply) and not ply:IsAdmin() then
+        return
+    end
+
+    local targetName = Adapter:GetDestination()
+    local planet = Adapter:ResolvePlanet(targetName)
+
+    if not planet then
+        print("[Convergence] No valid SWU destination is selected.")
+        return
+    end
+
+    local position = Adapter:GetMappedPosition(planet:GetID())
+
+    if isvector(position)
+        and IsValid(SWU.Controller)
+        and isfunction(SWU.Controller.SetShipPos) then
+        SWU.Controller:SetShipPos(position)
+    end
+
+    if IsValid(SWU.Controller)
+        and isfunction(SWU.Controller.ExitHyperspace) then
+        pcall(SWU.Controller.ExitHyperspace, SWU.Controller)
+    elseif IsValid(SWU.Controller)
+        and isfunction(SWU.Controller.SetHyperspace) then
+        pcall(SWU.Controller.SetHyperspace, SWU.Controller, 0)
+    end
+
+    Convergence.World.Arrive(planet:GetID(), position)
+    Adapter:ResetNavigationAfterArrival()
+
+    print(
+        "[Convergence] Forced synchronized arrival at "
+        .. planet:GetName()
+        .. "."
+    )
+end)
+
+
+concommand.Add("convergence_swu_reset_navigation", function(ply)
+    if IsValid(ply) and not ply:IsAdmin() then
+        return
+    end
+
+    Adapter:ResetNavigationAfterArrival()
+
+    print(
+        "[Convergence] SWU navigation computer reset. "
+        .. "A new destination may now be selected."
+    )
 end)

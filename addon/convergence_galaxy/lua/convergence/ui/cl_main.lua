@@ -7,6 +7,8 @@ UI.Frame = UI.Frame or nil
 UI.ActiveModuleID = UI.ActiveModuleID or "galaxy"
 UI.SelectedPlanetID = UI.SelectedPlanetID or nil
 UI.Mode = UI.Mode or "player"
+UI.OperationPlanetFilter = UI.OperationPlanetFilter or nil
+UI.SelectedOperationID = UI.SelectedOperationID or nil
 
 local function createNavigation(frame)
     local navigation = vgui.Create("DPanel", frame)
@@ -312,3 +314,16 @@ concommand.Add("convergence_ui_open_module", function(_, _, args)
         Convergence.UI.SetActiveModule(id)
     end
 end)
+
+
+function Convergence.UI.OpenOperationsForPlanet(planetID)
+    Convergence.UI.OperationPlanetFilter =
+        Convergence.NormalizeID(planetID or "")
+    Convergence.UI.SetActiveModule("operations")
+end
+
+function Convergence.UI.SelectOperation(eventID)
+    Convergence.UI.SelectedOperationID =
+        Convergence.NormalizeID(eventID or "")
+    Convergence.UI.SetActiveModule("operations")
+end

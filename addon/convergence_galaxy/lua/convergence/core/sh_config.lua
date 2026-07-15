@@ -112,7 +112,7 @@ Config.Planets = {
         name = "Reach",
         defaultStability = 60,
         galaxy = {x = 0.56, y = 0.27, sector = "Epsilon Eridani"},
-        swu = {name = "Reach", pos = Vector(1.7, 2.7, 0)},
+        swu = {name = "Reach", pos = Vector(220, 180, 0)},
         regions = {
             {id = "orbit", name = "Reach Orbit", map = "rp_venator"},
             {id = "surface", name = "Reach Surface", map = "rp_reach"}

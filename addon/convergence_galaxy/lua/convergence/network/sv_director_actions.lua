@@ -83,16 +83,26 @@ net.Receive("Convergence.Director.Action", function(_, ply)
 
     if action == ACTION_DEPLOY then
         local eventID = Convergence.NormalizeID(net.ReadString())
+        local selectedRegionID = Convergence.NormalizeID(net.ReadString())
+
         local success, result, message = Convergence.Deployments.Start(
             eventID,
-            context(ply, "GM deployed players through Director UI.")
+            context(ply, "GM deployed players through Director UI."),
+            selectedRegionID
         )
 
         sendResult(
             ply,
             success,
             success
-                and ("Player deployment started: " .. result.eventID)
+                and string.format(
+                    "Player deployment started: %s%s",
+                    result.eventID,
+                    result.lockedSnapshot
+                        and result.lockedSnapshot.map
+                        and (" | Prepared map: " .. result.lockedSnapshot.map)
+                        or ""
+                )
                 or string.format("[%s] %s", tostring(result), tostring(message))
         )
         return
@@ -152,9 +162,50 @@ net.Receive("Convergence.Director.Action", function(_, ply)
     end
 
     if action == ACTION_PREPARE_REGION then
-        local regionID = Convergence.NormalizeID(net.ReadString())
+        local eventID = Convergence.NormalizeID(net.ReadString())
+        local event = Convergence.CampaignEvents.Get(eventID)
+
+        if not event then
+            sendResult(ply, false, "Unknown campaign operation.")
+            return
+        end
+
+        local world = Convergence.World.GetState()
+        local currentPlanetID = Convergence.NormalizeID(
+            world.currentPlanetID or ""
+        )
+
+        if currentPlanetID ~= event.planetID then
+            local currentPlanet =
+                Convergence.PlanetService.Get(currentPlanetID)
+            local targetPlanet =
+                Convergence.PlanetService.Get(event.planetID)
+
+            sendResult(
+                ply,
+                false,
+                string.format(
+                    "Travel to %s before preparing this deployment. Current location: %s.",
+                    targetPlanet and targetPlanet:GetName() or event.planetID,
+                    currentPlanet and currentPlanet:GetName() or (
+                        currentPlanetID ~= "" and currentPlanetID or "Unknown"
+                    )
+                )
+            )
+            return
+        end
+
+        if not event.regionID or event.regionID == "" then
+            sendResult(
+                ply,
+                false,
+                "This operation does not have a configured region."
+            )
+            return
+        end
+
         local success, result, message =
-            Convergence.World.PrepareMapTransition(regionID)
+            Convergence.World.PrepareMapTransition(event.regionID)
 
         sendResult(
             ply,

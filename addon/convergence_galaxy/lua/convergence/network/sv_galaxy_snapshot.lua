@@ -194,6 +194,11 @@ local function buildSnapshot(ply, requestedMode)
                 eventType = event.eventType,
                 planetID = event.planetID,
                 regionID = mode == MODE_DIRECTOR and event.regionID or nil,
+                regions = mode == MODE_DIRECTOR
+                    and table.Copy(
+                        Convergence.World.GetRegions(event.planetID) or {}
+                    )
+                    or nil,
                 friendlyFactions = table.Copy(event.friendlyFactions),
                 enemyFactions = mode == MODE_DIRECTOR
                     and table.Copy(event.enemyFactions)

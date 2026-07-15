@@ -185,6 +185,19 @@ Convergence.UI.RegisterModule({
             ):Dock(TOP)
         else
             for id, event in SortedPairs(events) do
+                local currentPlanetID = Convergence.NormalizeID(
+                    world.currentPlanetID or ""
+                )
+                local atOperationPlanet =
+                    currentPlanetID == event.planetID
+                local targetPlanet =
+                    (data.planets or {})[event.planetID]
+                local targetPlanetName =
+                    targetPlanet
+                    and targetPlanet.state
+                    and targetPlanet.state.name
+                    or event.planetID
+
                 local row = vgui.Create("DPanel", operations)
                 row:Dock(TOP)
                 row:SetTall(105)
@@ -224,18 +237,51 @@ Convergence.UI.RegisterModule({
                 buttons:SetTall(34)
                 buttons.Paint = nil
 
+                if event.regionID and event.regionID ~= "" then
+                    local prepare = Components.CreateButton(
+                        buttons,
+                        "PREPARE REGION",
+                        function()
+                            Convergence.Director.Send(
+                                "prepare_region",
+                                function()
+                                    net.WriteString(id)
+                                end
+                            )
+                        end
+                    )
+                    prepare:Dock(LEFT)
+                    prepare:SetWide(150)
+                    prepare:DockMargin(0, 0, 8, 0)
+                    prepare:SetEnabled(atOperationPlanet)
+                    prepare:SetTooltip(
+                        atOperationPlanet
+                            and "Prepare this operation's configured map region."
+                            or "Travel to " .. targetPlanetName
+                                .. " before preparing."
+                    )
+                end
+
                 local deploy = Components.CreateButton(
                     buttons,
                     "DEPLOY",
                     function()
-                        Convergence.Director.Send("deploy", function()
-                            net.WriteString(id)
-                        end)
+                        Convergence.UI.OpenDeploymentMapSelector(id, event)
                     end
                 )
                 deploy:Dock(LEFT)
                 deploy:SetWide(130)
-                deploy:SetEnabled(not deployment and not event.playerControlled)
+                deploy:SetEnabled(
+                    atOperationPlanet
+                    and not deployment
+                    and not event.playerControlled
+                )
+                deploy:SetTooltip(
+                    atOperationPlanet
+                        and "Start the player deployment."
+                        or "Travel to " .. targetPlanetName
+                            .. " before deploying."
+                )
 
                 local extend = Components.CreateButton(
                     buttons,

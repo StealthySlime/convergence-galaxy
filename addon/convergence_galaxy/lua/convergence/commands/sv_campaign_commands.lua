@@ -81,7 +81,8 @@ concommand.Add("convergence_deployment_start", function(ply, _, args)
     local success, result, message =
         Convergence.Deployments.Start(
             args[1],
-            context(ply, "GM started player deployment.")
+            context(ply, "GM started player deployment."),
+            args[2]
         )
 
     print(success

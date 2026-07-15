@@ -208,15 +208,20 @@ Convergence.UI.RegisterModule({
                 operation:DockMargin(0, 0, 0, 8)
                 operation:DockPadding(8, 6, 8, 6)
 
+                operation:SetCursor("hand")
+
                 operation.Paint = function(self, width, height)
-                    draw.RoundedBox(
-                        4,
-                        0,
-                        0,
-                        width,
-                        height,
-                        Color(4, 20, 34, 225)
-                    )
+                    local background = self:IsHovered()
+                        and Color(8, 38, 62, 240)
+                        or Color(4, 20, 34, 225)
+
+                    draw.RoundedBox(4, 0, 0, width, height, background)
+                end
+
+                operation.OnMousePressed = function()
+                    Convergence.UI.OperationPlanetFilter = selectedID
+                    Convergence.UI.SelectedOperationID = record.id
+                    Convergence.UI.SetActiveModule("operations")
                 end
 
                 local name = Components.CreateLabel(
