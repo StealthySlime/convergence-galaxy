@@ -1,7 +1,7 @@
 Convergence = Convergence or {}
 
 Convergence.Name = "Convergence Galaxy"
-Convergence.Version = "0.11.0"
+Convergence.Version = "0.12.0"
 Convergence.SchemaVersion = 9
 Convergence.Root = "convergence/"
 
@@ -53,6 +53,7 @@ addShared(ROOT .. "core/sh_util.lua")
 addShared(ROOT .. "core/sh_log.lua")
 addShared(ROOT .. "core/sh_modules.lua")
 addShared(ROOT .. "core/sh_services.lua")
+addShared(ROOT .. "core/sh_service_facade.lua")
 addShared(ROOT .. "navigation/sh_navigation.lua")
 addShared(ROOT .. "core/sh_events.lua")
 addShared(ROOT .. "core/sh_config.lua")
@@ -86,6 +87,7 @@ addServer(ROOT .. "campaign/sv_news.lua")
 addServer(ROOT .. "campaign/sv_intelligence.lua")
 addServer(ROOT .. "fleets/sv_fleets.lua")
 addServer(ROOT .. "fleets/sv_orders.lua")
+addServer(ROOT .. "core/sv_lifecycle.lua")
 
 addServer(ROOT .. "network/sv_network.lua")
 addServer(ROOT .. "network/sv_galaxy_snapshot.lua")
@@ -116,6 +118,7 @@ addServer(ROOT .. "commands/sv_director_commands.lua")
 addServer(ROOT .. "commands/sv_campaign_commands.lua")
 addServer(ROOT .. "commands/sv_history_commands.lua")
 addServer(ROOT .. "commands/sv_living_galaxy_commands.lua")
+addServer(ROOT .. "commands/sv_lifecycle_commands.lua")
 
 addClient(ROOT .. "ui/cl_theme.lua")
 addClient(ROOT .. "ui/cl_registry.lua")
@@ -226,6 +229,20 @@ if SERVER then
                 code = clockCode,
                 error = clockMessage
             })
+        end
+
+        local lifecycleReady, lifecycleCode, lifecycleMessage =
+            Convergence.Lifecycle.Bootstrap()
+
+        if not lifecycleReady then
+            Convergence.Log.Error(
+                "Lifecycle",
+                "Core service bootstrap failed.",
+                {
+                    code = lifecycleCode,
+                    error = lifecycleMessage
+                }
+            )
         end
 
         local historyReady, historyCode, historyMessage =

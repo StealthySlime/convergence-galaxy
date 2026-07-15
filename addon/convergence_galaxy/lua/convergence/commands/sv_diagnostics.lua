@@ -98,3 +98,40 @@ concommand.Add("convergence_diagnostics", function(ply)
 
     print("====================================================")
 end)
+
+
+concommand.Add("convergence_service_status", function(ply)
+    if IsValid(ply) and not ply:IsAdmin() then
+        return
+    end
+
+    print("========== Convergence Service Facade ==========")
+
+    for alias, available in SortedPairs(
+        Convergence.ServiceFacade.Validate()
+    ) do
+        print(string.format(
+            "%-18s %s",
+            alias,
+            available and "PASS" or "FAIL"
+        ))
+    end
+
+    local highest = Convergence.StrategicIntelligence
+        and Convergence.StrategicIntelligence.GetHighestThreat()
+
+    print("-----------------------------------------------")
+    print(
+        "Highest Threat: "
+        .. (
+            highest
+            and string.format(
+                "%s (%.1f%%)",
+                highest.planetName,
+                highest.threat
+            )
+            or "None"
+        )
+    )
+    print("===============================================")
+end)

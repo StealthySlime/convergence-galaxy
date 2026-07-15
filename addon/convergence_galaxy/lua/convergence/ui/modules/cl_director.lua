@@ -14,6 +14,16 @@ Convergence.UI.RegisterModule({
         local deployment = data.activeDeployment
         local allEvents = data.campaignEvents or {}
         local events = {}
+        local intelligence = data.strategicIntelligence or {}
+        local highestThreat = nil
+
+        for _, assessment in pairs(intelligence) do
+            if not highestThreat
+                or (tonumber(assessment.threat) or 0)
+                    > (tonumber(highestThreat.threat) or 0) then
+                highestThreat = assessment
+            end
+        end
 
         for id, event in pairs(allEvents) do
             if event.status ~= "resolved" and event.status ~= "cancelled" then
@@ -26,7 +36,7 @@ Convergence.UI.RegisterModule({
 
         local status = Components.CreateCard(root, "CAMPAIGN DIRECTOR")
         status:Dock(TOP)
-        status:SetTall(250)
+        status:SetTall(285)
         status:DockMargin(12, 12, 12, 0)
 
         Components.CreateStatRow(
@@ -64,6 +74,24 @@ Convergence.UI.RegisterModule({
             status,
             "Visible Operations",
             tostring(table.Count(events))
+        )
+        Components.CreateStatRow(
+            status,
+            "Highest Threat",
+            highestThreat
+                and string.format(
+                    "%s — %.0f%%",
+                    highestThreat.planetName,
+                    tonumber(highestThreat.threat) or 0
+                )
+                or "No assessment",
+            highestThreat
+                and (tonumber(highestThreat.threat) or 0) >= 80
+                    and Theme.GetColor("danger")
+                    or highestThreat
+                        and (tonumber(highestThreat.threat) or 0) >= 55
+                            and Theme.GetColor("warning")
+                            or Theme.GetColor("textMuted")
         )
 
         local controls = Components.CreateCard(root, "QUICK CONTROLS")

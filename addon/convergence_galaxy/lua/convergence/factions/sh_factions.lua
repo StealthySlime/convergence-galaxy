@@ -174,3 +174,127 @@ end
 function Factions.GetPlayerFactions()
     return Factions.GetByAlignment(Factions.ALIGNMENT.PLAYER)
 end
+
+
+function Convergence.Factions.GetAllIDs()
+    local result = {}
+
+    for id in pairs(Convergence.Factions.GetAll() or {}) do
+        result[#result + 1] = id
+    end
+
+    table.sort(result)
+    return result
+end
+
+function Convergence.Factions.GetFriendlyIDs()
+    local result = {}
+
+    for id, faction in pairs(Convergence.Factions.GetAll() or {}) do
+        local alignment = Convergence.NormalizeID(
+            faction.alignment
+            or faction.side
+            or faction.team
+            or ""
+        )
+
+        if faction.playerFaction == true
+            or faction.friendly == true
+            or alignment == "friendly"
+            or alignment == "player"
+            or alignment == "coalition"
+            or id == "republic"
+            or id == "unsc" then
+            result[#result + 1] = id
+        end
+    end
+
+    table.sort(result)
+    return result
+end
+
+function Convergence.Factions.GetEnemyIDs()
+    local result = {}
+    local friendly = {}
+
+    for _, id in ipairs(Convergence.Factions.GetFriendlyIDs()) do
+        friendly[id] = true
+    end
+
+    for id, faction in pairs(Convergence.Factions.GetAll() or {}) do
+        local alignment = Convergence.NormalizeID(
+            faction.alignment
+            or faction.side
+            or faction.team
+            or ""
+        )
+
+        if not friendly[id]
+            and (
+                faction.enemyFaction == true
+                or faction.enemy == true
+                or faction.hostile == true
+                or alignment == "enemy"
+                or alignment == "hostile"
+                or alignment == "opposition"
+                or id == "covenant"
+                or id == "cis"
+            ) then
+            result[#result + 1] = id
+        end
+    end
+
+    table.sort(result)
+    return result
+end
+
+function Convergence.Factions.GetNeutralIDs()
+    local friendly = {}
+    local enemy = {}
+    local result = {}
+
+    for _, id in ipairs(Convergence.Factions.GetFriendlyIDs()) do
+        friendly[id] = true
+    end
+
+    for _, id in ipairs(Convergence.Factions.GetEnemyIDs()) do
+        enemy[id] = true
+    end
+
+    for id in pairs(Convergence.Factions.GetAll() or {}) do
+        if not friendly[id] and not enemy[id] then
+            result[#result + 1] = id
+        end
+    end
+
+    table.sort(result)
+    return result
+end
+
+function Convergence.Factions.GetInfluenceTotal(planetID, factionIDs)
+    local total = 0
+
+    for _, factionID in ipairs(factionIDs or {}) do
+        total = total + (
+            tonumber(
+                Convergence.Influence.Get(planetID, factionID)
+            ) or 0
+        )
+    end
+
+    return total
+end
+
+function Convergence.Factions.GetFriendlyInfluence(planetID)
+    return Convergence.Factions.GetInfluenceTotal(
+        planetID,
+        Convergence.Factions.GetFriendlyIDs()
+    )
+end
+
+function Convergence.Factions.GetEnemyInfluence(planetID)
+    return Convergence.Factions.GetInfluenceTotal(
+        planetID,
+        Convergence.Factions.GetEnemyIDs()
+    )
+end
